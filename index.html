@@ -202,12 +202,13 @@ separates them is how much you can scope, and how much you can prove afterwards.
 <li><a href="#s2">One pool, not two bills</a></li>
 <li><a href="#s3">Worked scenario: twelve people</a></li>
 <li><a href="#s4">Blast radius</a></li>
-<li><a href="#s5">Head to head</a></li>
-<li><a href="#s6">Risk register — Claude Code</a></li>
-<li><a href="#s7">Risk register — Cowork</a></li>
-<li><a href="#s8">Reaching Fabric: two routes</a></li>
-<li><a href="#s9">A normal day</a></li>
-<li><a href="#s10">What I'd do — and the case against it</a></li>
+<li><a href="#s5">What leaves, and how long it stays</a></li>
+<li><a href="#s6">Head to head</a></li>
+<li><a href="#s7">Risk register — Claude Code</a></li>
+<li><a href="#s8">Risk register — Cowork</a></li>
+<li><a href="#s9">Reaching Fabric: two routes</a></li>
+<li><a href="#s10">A normal day</a></li>
+<li><a href="#s11">What I'd do — and the case against it</a></li>
 </ol>
 </div>
 
@@ -245,6 +246,13 @@ local session history on the employee's own laptop outside central retention wit
 export and no deletion endpoint yet, and sits behind network egress rules that explicitly
 do not apply to web fetch, web search, or Model Context Protocol (MCP) servers — the
 standard way an agent is handed a menu of tools to call.</p>
+
+<p><strong>And there is a second axis that most comparisons, including the first version of
+this page, leave out entirely: what actually travels to the vendor and how long it is
+kept.</strong> Control answers "who may act, and what can I prove." Retention answers "and
+how long does someone else hold it." Section 05 covers it, and the short version is that
+neither tool differs — but the numbers are not the ones usually quoted, and a feedback
+button quietly carries a five-year retention period.</p>
 
 <div class="note teal">
 <span class="lbl">The recommendation in four sentences</span>
@@ -623,7 +631,198 @@ the three dashed paths on the right have no control to turn on. A gap is only as
 the person standing in it.</figcaption>
 </figure>
 
-<h2 id="s5"><span class="num">05</span>Head to head</h2>
+<h2 id="s5"><span class="num">05</span>What leaves, and how long it stays</h2>
+
+<p class="lead">The previous section asked how far each tool can reach. This one asks the
+other half of the question, and it is the half most comparisons skip: what actually travels
+to the vendor, and how long the vendor keeps it.</p>
+
+<div class="plain">
+<span class="t">In plain terms</span>
+<p>There is no "code only" channel. <strong>Anything the agent reads becomes part of the
+request</strong> — the files it opens, the output of the commands it runs, and the rows an
+MCP tool hands back. If a query returns a hundred customer records, those hundred records
+are in the request. That is true on both Fabric routes, and it is the concrete mechanism
+behind the compliance-boundary warning quoted later in section 09.</p>
+</div>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 880 396" role="img" aria-label="Everything the agent reads becomes part of the request. Three destinations: the Anthropic API receives prompts and responses and is subject to retention, Statsig and Sentry receive metrics and errors without code or file paths, and an opt-in OpenTelemetry collector you configure never reaches Anthropic. Retention falls into four buckets: 30 days for API data, until deletion for saved Team and Enterprise sessions, five years for anything sent as feedback, and none under zero data retention.">
+  <defs><marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,1 L9,5 L0,9 z" fill="var(--muted)"/></marker></defs>
+
+  <text x="16" y="18" class="hd">WHAT THE AGENT READS</text>
+  <text x="248" y="18" class="hd">WHERE IT GOES</text>
+  <text x="496" y="18" class="hd">HOW LONG IT STAYS</text>
+
+  <!-- what is read -->
+  <rect x="16" y="30" width="200" height="232" rx="9" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="116" y="54" text-anchor="middle" font-size="12">prompts you type</text>
+  <text x="116" y="78" text-anchor="middle" font-size="12">contents of files it opens</text>
+  <text x="116" y="102" text-anchor="middle" font-size="12">output of commands it runs</text>
+  <text x="116" y="126" text-anchor="middle" font-size="12">rows an MCP tool returns</text>
+  <text x="116" y="150" text-anchor="middle" font-size="12">error messages and traces</text>
+  <text x="116" y="184" text-anchor="middle" class="cap">NO CODE-ONLY CHANNEL</text>
+  <text x="116" y="206" text-anchor="middle" class="lbl-sm">if it reads it, it is in the request</text>
+  <text x="116" y="226" text-anchor="middle" class="lbl-sm">— on both Fabric routes alike</text>
+
+  <!-- destinations -->
+  <rect x="248" y="30" width="216" height="70" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+  <text x="356" y="54" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--accent)">Anthropic API</text>
+  <text x="356" y="72" text-anchor="middle" class="lbl-sm">prompts + model responses</text>
+  <text x="356" y="90" text-anchor="middle" class="lbl-sm">retention per your plan</text>
+
+  <rect x="248" y="118" width="216" height="70" rx="6" fill="var(--surface)" stroke="var(--gold)"/>
+  <text x="356" y="142" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--gold)">Statsig · Sentry</text>
+  <text x="356" y="160" text-anchor="middle" class="lbl-sm">metrics and errors only</text>
+  <text x="356" y="178" text-anchor="middle" class="lbl-sm">no code, no file paths</text>
+
+  <rect x="248" y="206" width="216" height="70" rx="6" fill="var(--surface)" stroke="var(--teal)"/>
+  <text x="356" y="230" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--teal)">Your OTel collector</text>
+  <text x="356" y="248" text-anchor="middle" class="lbl-sm">opt-in, you configure it</text>
+  <text x="356" y="266" text-anchor="middle" class="lbl-sm">never reaches Anthropic</text>
+
+  <line x1="220" y1="64" x2="242" y2="64" stroke="var(--muted)" marker-end="url(#ar6)"/>
+  <line x1="220" y1="152" x2="242" y2="152" stroke="var(--muted)" marker-end="url(#ar6)"/>
+  <line x1="220" y1="240" x2="242" y2="240" stroke="var(--muted)" marker-end="url(#ar6)"/>
+
+  <!-- retention buckets, fed only by the API path -->
+  <line x1="464" y1="64" x2="486" y2="64" stroke="var(--muted)"/>
+  <line x1="488" y1="54" x2="488" y2="228" stroke="var(--line-2)" stroke-width="1.5"/>
+
+  <rect x="496" y="30" width="352" height="48" rx="6" fill="var(--surface)" stroke="var(--line-2)"/>
+  <text x="672" y="50" text-anchor="middle" font-size="12.5" font-weight="650">30 days</text>
+  <text x="672" y="68" text-anchor="middle" class="lbl-sm">API inputs and outputs, deleted from the backend</text>
+  <line x1="488" y1="54" x2="492" y2="54" stroke="var(--muted)" marker-end="url(#ar6)"/>
+
+  <rect x="496" y="88" width="352" height="48" rx="6" fill="var(--gold-soft)" stroke="var(--gold)"/>
+  <text x="672" y="108" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--gold)">until someone deletes it</text>
+  <text x="672" y="126" text-anchor="middle" class="lbl-sm">saved Team / Enterprise chats and coding sessions</text>
+  <line x1="488" y1="112" x2="492" y2="112" stroke="var(--muted)" marker-end="url(#ar6)"/>
+
+  <rect x="496" y="146" width="352" height="48" rx="6" fill="var(--red-soft)" stroke="var(--red)"/>
+  <text x="672" y="166" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--red)">5 years</text>
+  <text x="672" y="184" text-anchor="middle" class="lbl-sm">anything you submit as feedback or a bug report</text>
+  <line x1="488" y1="170" x2="492" y2="170" stroke="var(--muted)" marker-end="url(#ar6)"/>
+
+  <rect x="496" y="204" width="352" height="48" rx="6" fill="var(--teal-soft)" stroke="var(--teal)"/>
+  <text x="672" y="224" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--teal)">none — zero data retention</text>
+  <text x="672" y="242" text-anchor="middle" class="lbl-sm">Enterprise only, and Anthropic has to enable it for you</text>
+  <line x1="488" y1="228" x2="492" y2="228" stroke="var(--muted)" marker-end="url(#ar6)"/>
+
+  <text x="16" y="302" class="cap" fill="var(--red)">THE BUCKET MOST PEOPLE MISS</text>
+  <text x="16" y="324" font-size="12.5" fill="var(--ink-2)">A thumbs-down or a bug report moves that submission into the five-year bucket — on a commercial plan too.</text>
+  <text x="16" y="352" class="cap">AND THE ONE THAT BITES AN AZURE ESTATE</text>
+  <text x="16" y="374" font-size="12.5" fill="var(--ink-2)">Zero retention and Anthropic's covered models are mutually exclusive — on Azure Foundry, that means a separate subscription.</text>
+</svg>
+</div>
+<figcaption><b>Three destinations, four retention buckets — and only one of the three feeds
+the buckets.</b> The telemetry path carries no code or file paths, and the
+OpenTelemetry path goes to a collector you own and never to Anthropic. What matters is the
+top path, and the surprise in it is the five-year bucket sitting behind a feedback
+button.</figcaption>
+</figure>
+
+<h3>How long it is kept</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>What</th><th>Retention</th><th>The detail that matters</th></tr></thead>
+<tbody>
+<tr><td>API inputs and outputs</td><td><b>30 days</b></td><td>Automatically deleted from the backend, with four stated exceptions: a service with longer retention under your control, a zero-retention agreement, Usage Policy enforcement, and legal compliance</td></tr>
+<tr class="hi"><td>Saved Team / Enterprise chats and coding sessions</td><td><b>Until deleted</b></td><td>Retained in the product "to provide you with a consistent product experience." Deleting removes it from history immediately and purges the backend within 30 days. <b>This is not a 30-day cap</b></td></tr>
+<tr><td>Anything submitted as feedback</td><td><b>5 years</b></td><td>Thumbs up/down and bug reports. Stated in both the consumer and the commercial articles, so a Team plan does not exempt you</td></tr>
+<tr><td>Incognito chats</td><td>30 days</td><td>Automatically deleted unless flagged as a Usage Policy violation</td></tr>
+<tr><td>Consumer accounts, model improvement on</td><td>5 years</td><td>Not your situation on Team, but it is where the widely quoted "5 years" figure comes from</td></tr>
+<tr><td>Consumer accounts, model improvement off</td><td>30 days</td><td>Changeable at any time in privacy settings</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note warn">
+<span class="lbl">The correction worth carrying into a meeting</span>
+<p>You will read in plenty of places that "Team and Enterprise data is deleted after 30
+days." That conflates two different things. Thirty days is the <em>API backend</em>
+deletion window and the post-deletion purge window. Your saved coding sessions live in the
+product until somebody deletes them. If your argument to a reviewer depends on a 30-day
+ceiling, it does not have one.</p>
+</div>
+
+<h3>Training, and the default an admin can switch off</h3>
+
+<p>On commercial terms — Team, Enterprise, API, third-party platforms — Anthropic "does not
+train generative models using code or prompts sent to Claude Code." That is the sentence
+worth quoting. But note the clause that follows it: <em>unless the customer has chosen to
+provide their data</em>, for example through the Development Partner Program, which
+<strong>an organisation admin can expressly opt into</strong>. "No training by default" is
+a default, not a property of the plan.</p>
+
+<h3>Zero data retention, and why it is not a switch you can flip</h3>
+
+<p><strong>Zero data retention</strong> (ZDR) means prompts and responses are "processed in
+real time and not stored by Anthropic after the response is returned, except where needed
+to comply with law or combat misuse." Anthropic still retains User Safety classifier
+results to enforce the Usage Policy, so it is not literally zero.</p>
+
+<p>Four things people assume about it that are wrong:</p>
+
+<ul>
+<li><strong>It is not part of Enterprise.</strong> It "is not included in the standard
+Claude for Enterprise plan and cannot be enabled from your admin settings" — Anthropic
+enables it per organisation for qualified accounts, through your account team.</li>
+<li><strong>It is not available on Team at all.</strong> Enterprise, or an API key from a
+commercial organisation.</li>
+<li><strong>It does not travel to other clouds.</strong> ZDR for Claude Code "applies only
+to Anthropic's direct platform" — not Amazon Bedrock or Google Cloud's Agent Platform.</li>
+<li><strong>It restricts which models you can use.</strong> Anthropic's covered models
+require retention to be turned <em>on</em>, so the two are mutually exclusive. On Claude in
+Azure Foundry, retention is configured per Azure subscription, and "if you have zero data
+retention configured, then you will need to create and use a separate Azure Subscription to
+access these models." For an Azure-based estate that is a real architectural
+consequence, not a footnote.</li>
+</ul>
+
+<div class="impl">
+<div class="hd">For the implementer — telemetry, subprocessors, and what turning them off costs</div>
+<p>Two named subprocessors sit outside the API path: <strong>Statsig</strong> for
+operational metrics (latency, reliability, usage patterns) and <strong>Sentry</strong> for
+error logging. Neither receives code or file paths; both are encrypted with TLS in transit
+and 256-bit AES at rest. Opt out with <code>DISABLE_TELEMETRY</code> and
+<code>DISABLE_ERROR_REPORTING</code>. <code>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC</code>
+covers everything at once; <code>DO_NOT_TRACK</code> and
+<code>CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY</code> are also honoured.</p>
+<p><strong>But read the cost before you set them.</strong> Those same variables stop Claude
+Code fetching feature flags, which disables Remote Control, messaging sessions beyond the
+local machine, <code>claude import</code> and <code>/import</code>, the advisor tool, and
+reading or replying to artifact comments. This is a tradeoff, not a free win — which is
+something the community guides that recommend "just disable them all" tend to leave
+out.</p>
+<p>On the session-quality survey: nothing is uploaded unless the user explicitly selects
+Yes, and survey responses cannot be used to train models. Note though that the follow-up
+can submit <em>session transcripts</em>, not merely a numeric rating — and feedback
+submissions carry the five-year retention above. Organisations with zero data retention, or
+with product feedback disabled by policy, never see the prompt.
+<code>feedbackSurveyRate</code> tunes frequency instead of disabling it.</p>
+<p>The OpenTelemetry path is separate and opt-in, and its data goes only to the collector
+you configure. Two defaults worth knowing: prompt and response <em>content</em> are not
+collected unless you set <code>OTEL_LOG_USER_PROMPTS</code> or
+<code>OTEL_LOG_ASSISTANT_RESPONSES</code>, and when users authenticate via OAuth,
+<code>user.email</code> is included in telemetry attributes — Anthropic's guidance is to
+filter or redact it in your own backend if that matters to you.</p>
+</div>
+
+<div class="deeper">
+<div class="t">Go deeper</div>
+<ul>
+<li><span class="src">First-party</span><a href="https://code.claude.com/docs/en/data-usage">Claude Code data usage</a> — the training policy per audience, the retention table, the two subprocessors, and the feedback-survey mechanics. The single page to read if you only read one.</li>
+<li><span class="src">First-party</span><a href="https://privacy.anthropic.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data">How long do you store my organization's data?</a> — the 30-day rule, its four exceptions, and the in-product retention sentence that most summaries drop.</li>
+<li><span class="src">First-party</span><a href="https://code.claude.com/docs/en/zero-data-retention">Zero data retention for Claude Code</a> — what it covers, and the plain statement that you cannot enable it yourself.</li>
+<li><span class="src">First-party</span><a href="https://support.claude.com/en/articles/15425996-data-retention-practices-for-covered-models">Data retention practices for covered models</a> — why zero retention and the newest models conflict, including the separate-Azure-subscription consequence.</li>
+</ul>
+</div>
+
+<h2 id="s6"><span class="num">06</span>Head to head</h2>
 
 <p>Every row is sourced first-party. This is the comparison table — but read it for the
 pattern rather than row by row, because the pattern is the finding.</p>
@@ -638,7 +837,9 @@ pattern rather than row by row, because the pattern is the finding.</p>
 <tr><td><b>Per-action gate</b></td><td>Asks before edits, tests, commands; approve once or always; explicit deny rules</td><td>Per-task approval for write-capable connector tools; "always allow" <b>off by default</b></td></tr>
 <tr><td><b>Read-only exemption</b></td><td>Built-in list — <code>ls</code>, <code>cat</code>, <code>git status</code> — runs without asking</td><td>Only if the connector annotates the tool read-only; most custom connectors don't, so all their tools stay gated</td></tr>
 <tr><td><b>Unattended mode</b></td><td>Auto mode: a separate classifier reviews actions and blocks unsafe ones; the org can disable it</td><td>Cloud sessions — <b>on by default on Team</b></td></tr>
-<tr><td><b>Web fetch</b></td><td><code>curl</code> / <code>wget</code> <b>not auto-approved</b>; can be denied outright</td><td>Egress rules <b>do not apply</b> to web fetch, web search, or MCP</td></tr>
+<tr><td><b>Reachability — can it reach a host?</b></td><td><code>curl</code> / <code>wget</code> <b>not auto-approved</b>; can be denied outright</td><td>Egress rules <b>do not apply</b> to web fetch, web search, or MCP</td></tr>
+<tr><td><b>What reaches Anthropic</b></td><td colspan="2" style="text-align:center">Identical, and often misunderstood: <b>everything the agent reads</b> — file contents, command output, MCP results — is in the request. Neither surface, and neither Fabric route, changes this</td></tr>
+<tr><td><b>Retention of what it reads</b></td><td colspan="2" style="text-align:center">Same plan, same rules: 30 days for API data, saved sessions until deleted, five years for anything sent as feedback. See section 05</td></tr>
 <tr><td><b>Isolation</b></td><td>Sandboxed bash with filesystem and network isolation; working-directory boundary; devcontainers</td><td>Cloud sessions in an Anthropic-managed environment; local sessions on the user's own machine</td></tr>
 <tr><td><b>Cloud session audit</b></td><td>"All operations in cloud sessions are logged for compliance and audit purposes"</td><td>Captured in the Compliance API; the OpenTelemetry stream "doesn't replace audit logging for compliance purposes"</td></tr>
 <tr><td><b>Local history</b></td><td>Repo under version control; session data under standard retention</td><td><b>Not</b> under standard retention, <b>no</b> admin export, <b>no</b> deletion endpoint yet</td></tr>
@@ -658,7 +859,7 @@ Code is currently ahead — which is the opposite of the intuition that a develo
 must be the riskier one.</p>
 </div>
 
-<h2 id="s6"><span class="num">06</span>Risk register — Claude Code</h2>
+<h2 id="s7"><span class="num">07</span>Risk register — Claude Code</h2>
 
 <div class="tw">
 <table>
@@ -677,7 +878,7 @@ must be the riskier one.</p>
 understand the risk. The residual risk is C1 — and that is a credential hygiene problem
 you already have, running faster.</p>
 
-<h2 id="s7"><span class="num">07</span>Risk register — Cowork</h2>
+<h2 id="s8"><span class="num">08</span>Risk register — Cowork</h2>
 
 <p>The headline here is not prompt injection. It is that three of these have no mitigation
 available on a Team plan.</p>
@@ -694,6 +895,7 @@ available on a Team plan.</p>
 <tr><td class="rid">W6</td><td><b>Projects cannot be restricted.</b> "Owners cannot restrict project creation at the organization level at this time"</td><td>Users can create workspaces with their own files, instructions and memory, outside any org-level policy</td><td><span class="nomit">NONE</span> — accept it, or don't deploy</td></tr>
 <tr><td class="rid">W7</td><td><b>Document-borne prompt injection</b></td><td>The user population is the least equipped to spot a malicious instruction inside a document</td><td>Keep "always allow" off for write tools (the default); curate the plugin catalogue; teach that outside documents are untrusted input</td></tr>
 <tr><td class="rid">W8</td><td><b>Inherited browser identity</b></td><td>When browsing, the agent acts as whoever the user is already signed in as</td><td>Restrict or disable browser use; stop treating "it only sees what the user sees" as reassurance</td></tr>
+<tr><td class="rid">W9</td><td><b>Admin-console policy does not reach Cowork.</b> In a Cowork session Claude Code "never fetches server-managed settings from the claude.ai admin console, even when the user signs in with a Team or Enterprise account"</td><td>The most dangerous kind of gap: an admin configures policy centrally, sees it saved, and reasonably believes it applies. On a local Cowork session it does not</td><td>Deploy the policy to the <b>device</b> instead — MDM or OS-level policy and the managed-settings file, which a local Cowork session does read. Or require a full VM sandbox for Cowork sessions</td></tr>
 </tbody>
 </table>
 </div>
@@ -701,6 +903,19 @@ available on a Team plan.</p>
 <p><strong>Net:</strong> the controls that exist are sensible, and the approval defaults are
 genuinely conservative. But <strong>W1, W3 and W6 are accept-or-decline on a Team
 plan.</strong> That, not injection, is what makes Cowork the harder rollout.</p>
+
+<div class="note gold">
+<span class="lbl">W9 changes the shape of the scoping problem</span>
+<p>W1 says you cannot scope Cowork <em>from the admin console</em> on a Team plan, and that
+is still true. But W9 says the admin console was never the whole control surface for Cowork
+anyway — local sessions read <strong>device</strong> policy. So if you already manage
+laptops with MDM, you have a lever the console does not give you, and "all-or-nothing" is
+less absolute than it first appears.</p>
+<p>Two caveats before you lean on it. It governs Claude Code's settings, not Cowork's
+organisation-level toggles, so it does not restore per-team enablement or fix project
+creation (W6). And it only helps if your device fleet is actually managed — for a
+twelve-person team, that is a real question rather than a safe assumption.</p>
+</div>
 
 <div class="note warn">
 <span class="lbl">On W7's evidence — read this before quoting it</span>
@@ -716,11 +931,11 @@ misusing them.</p>
 <div class="t">Go deeper</div>
 <ul>
 <li><span class="src">First-party</span><a href="https://support.claude.com/en/articles/13455879-use-claude-cowork-on-team-and-enterprise-plans">Use Claude Cowork on Team and Enterprise plans</a> — the source for every quoted control, default and gap in this section. The single most useful page if you are actually deciding.</li>
-<li><span class="src">First-party</span><a href="https://code.claude.com/docs/en/security">Claude Code security</a> — permission modes, the built-in protections, and the cloud-execution controls quoted in section 06.</li>
+<li><span class="src">First-party</span><a href="https://code.claude.com/docs/en/security">Claude Code security</a> — permission modes, the built-in protections, and the cloud-execution controls quoted in section 07.</li>
 </ul>
 </div>
 
-<h2 id="s8"><span class="num">08</span>Reaching Fabric: MCP server or CLI?</h2>
+<h2 id="s9"><span class="num">09</span>Reaching Fabric: MCP server or CLI?</h2>
 
 <p>Your team's agent has to actually touch Fabric. There are two routes, and they differ
 far more than they look.</p>
@@ -829,6 +1044,7 @@ named human from Fabric's audit log on both.</figcaption>
 <tr><td><b>Destructive-op guardrails</b></td><td>Microsoft: safeguards "are not standardized in the MCP specification and may not be supported by all clients"</td><td>Your own deny rules, e.g. block anything matching a delete</td></tr>
 <tr><td><b>Compliance boundary</b></td><td>Microsoft: "may interact with clients and services that process data outside of Fabric's compliance boundaries… <b>You are responsible</b>"</td><td>A local process calling Fabric's API</td></tr>
 <tr><td><b>Seen by Claude's egress allowlist</b></td><td><b>No</b> — "network egress permissions don't apply to … MCPs"</td><td>Yes — a normal command under normal approval</td></tr>
+<tr><td><b>Does the Fabric data leave Fabric?</b></td><td colspan="2" style="text-align:center"><b>Yes, on both.</b> Tool results and command output are both read into the request. This axis does <b>not</b> distinguish the two routes — see below</td></tr>
 </tbody>
 </table>
 </div>
@@ -852,6 +1068,51 @@ protocol.</li>
 workspace roles, and the conclusion is not "MCP is unsafe". It is that <strong>MCP is the
 route your existing egress controls and approval gates were not built to see, carrying
 tools that can escalate privileges and destroy things.</strong></p>
+
+<h3>The part that is the same on both routes — and it is the data itself</h3>
+
+<p>Microsoft's warning that an MCP integration "may process data outside of Fabric's
+compliance boundaries" is abstract. Here is the concrete mechanism, and it is worth stating
+plainly because it is the thing most easily missed:</p>
+
+<div class="note warn">
+<span class="lbl">The mechanism</span>
+<p>You ask for recent orders. The tool runs a query. It returns a hundred rows — names,
+email addresses, order values. <strong>Those hundred rows are now in the request</strong>,
+and they are retained under whatever bucket section 05 put you in. The agent cannot reason
+about data it has not been given, so any answer about your data implies your data left
+Fabric.</p>
+<p>And <strong>the CLI route is no different.</strong> Command output is read the same way.
+A <code>fab</code> command that prints rows sends those rows. On this axis the two routes
+are <em>equivalent</em>, and the earlier row about the egress allowlist is about something
+else entirely — whether the agent can <em>reach</em> a host, not whether what it reads is
+transmitted.</p>
+</div>
+
+<p>So the recommendation later in this page rests on identity, gating and audit —
+<strong>not</strong> on keeping Fabric data inside Fabric. Nothing on either route does
+that. What limits your exposure is not the transport, it is the query: whose credentials
+ran it, what scope they had, and how much came back.</p>
+
+<h3>Hygiene that follows from that</h3>
+
+<p>These are recommendations rather than vendor statements, and they follow directly from
+the mechanism above. They apply to both routes:</p>
+
+<ul>
+<li><strong>Never point either route at production data.</strong> This is the one that
+actually reduces exposure, and it outranks every other control on this page.</li>
+<li><strong>Use read-only identities for anything exploratory.</strong> It bounds the damage
+from a wrong call and from a prompt-injected one.</li>
+<li><strong>Prefer aggregates and narrow projections to <code>SELECT *</code>.</strong> Less
+comes back, so less is transmitted and retained. Ask for the shape of the answer, not the
+rows.</li>
+<li><strong>Anonymise or synthesise development datasets.</strong> A realistic schema with
+unrealistic people gets you almost all the value.</li>
+<li><strong>Audit the MCP servers you install.</strong> The first-party Fabric servers are
+Microsoft's; a community server is third-party code you are handing an Entra token
+to.</li>
+</ul>
 
 <h3>The trap on the CLI route</h3>
 
@@ -895,7 +1156,7 @@ available on either route.</strong></p>
 </ul>
 </div>
 
-<h2 id="s9"><span class="num">09</span>A normal day</h2>
+<h2 id="s10"><span class="num">10</span>A normal day</h2>
 
 <p>Abstract controls are hard to weigh. Here is what each route feels like in practice.</p>
 
@@ -926,7 +1187,7 @@ and beyond admin export. If it was a cloud session — the default on Team — t
 to their Claude account. And if one of those documents came from outside the company, it
 was untrusted input handed to an agent by someone with no reason to suspect it.</p>
 
-<h2 id="s10"><span class="num">10</span>What I'd do — and the case against it</h2>
+<h2 id="s11"><span class="num">11</span>What I'd do — and the case against it</h2>
 
 <figure>
 <div class="fig-box">
@@ -1043,12 +1304,26 @@ obligations, those three facts <em>are</em> the decision, and the answer is eith
 approvals per-task, curate the plugin catalogue, and tell people that a document from
 outside the company is untrusted input.</p>
 
-<p><strong>For Fabric, use the CLI with interactive per-user login for daily work.</strong>
-Not because a CLI is inherently safer, but because it keeps three things you otherwise lose:
-a named human in the audit log, a text command a rule can gate, and traffic your egress
-policy can actually see. Use the Core MCP server where its discovery genuinely pays —
-read-heavy exploration by people who understand what is on the tool menu — and keep it off
-the path that touches sensitive workspaces while it is still in preview.</p>
+<p><strong>Don't point either Fabric route at production data.</strong> This belongs first
+because it is the only recommendation here that reduces what actually leaves your estate.
+Every other control on this page governs <em>who</em> may act and <em>what you can prove</em>
+afterwards; none of them stop query results being transmitted and retained. Development and
+anonymised data, read-only identities, narrow projections.</p>
+
+<p><strong>Then, for Fabric, use the CLI with interactive per-user login for daily
+work.</strong> Not because a CLI is inherently safer, and explicitly <em>not</em> because it
+keeps data inside Fabric — it doesn't, and neither does the MCP route. It keeps three other
+things you otherwise lose: a named human in the audit log, a text command a rule can gate,
+and traffic your network policy can actually see. Use the Core MCP server where its
+discovery genuinely pays — read-heavy exploration by people who understand what is on the
+tool menu — and keep it off the path that touches sensitive workspaces while it is still in
+preview.</p>
+
+<p><strong>Tell people what the feedback button costs.</strong> A thumbs-down or a bug
+report moves that conversation into a five-year retention bucket, on your commercial plan,
+regardless of the thirty-day norm everywhere else. That is a one-line thing to say in an
+onboarding note and an expensive thing to discover afterwards. If retention obligations are
+tight, disable non-essential traffic and accept the feature cost listed in section 05.</p>
 
 <h3>The case against all of that</h3>
 
@@ -1093,7 +1368,19 @@ status claim before relying on it.</p>
 <p><b>Corrections made while researching this.</b> Cowork is not a research preview and is
 not gated behind a Premium seat — both were true earlier in 2026 and are not now. Cowork
 <em>is</em> captured in the Compliance API; a widely repeated claim that it is not is wrong.
-The real gaps are narrower, and are listed in section 07.</p>
+The real gaps are narrower, and are listed in section 08.</p>
+
+<p><b>Revised 2026-09-02 after validating a community guide.</b> Section 05 and the
+data-egress passage in section 09 were added after checking this page against a
+widely-shared third-party guide to Claude Code privacy. The exercise found a real omission —
+this page covered control but not data — and three imprecisions in the guide worth naming,
+since the same claims circulate widely: "Team and Enterprise = 30 days" conflates the API
+backend window with in-product retention of saved sessions; the session-quality survey can
+submit transcripts, not merely a numeric rating; and the advice to disable telemetry omits
+that the same variables also disable feature-flag-gated functionality. One variable the
+guide lists could not be confirmed in first-party documentation, so it is deliberately
+absent here. Sections 06 and 11 were corrected in the same pass: what the agent reads is
+transmitted on <em>both</em> Fabric routes, so that axis never distinguished them.</p>
 
 <p><b>The organisation is invented.</b> No real organisation, person, workspace or object
 name appears anywhere on this page. The twelve-person Fabric team is a composite built to

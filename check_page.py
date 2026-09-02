@@ -56,6 +56,17 @@ BANNED = [
     # Cowork ships with every paid seat, both Team seat types.
     "Cowork requires a Premium seat",
     "Cowork is only available on Premium",
+    # 30 days is the API backend deletion window, NOT a cap on saved Team/Enterprise
+    # sessions, which are retained in-product until someone deletes them. This
+    # conflation is the most widely repeated error about Claude retention.
+    "Team and Enterprise data is deleted after 30 days",
+    "Team and Enterprise data is deleted within 30 days",
+    "all data is deleted after 30 days",
+    # ZDR requires Anthropic to enable it per organisation; it is not a self-serve toggle
+    # and is not part of the standard Enterprise plan.
+    "enable zero data retention in your admin settings",
+    "enable ZDR from admin settings",
+    "zero data retention is included in Enterprise",
 ]
 
 # Acronyms a plain-language page must expand before it leans on them. Each entry is
@@ -63,6 +74,14 @@ BANNED = [
 FIRST_MENTION = [
     ("MCP", "Model Context Protocol"),
     ("RBAC", "role-based access control"),
+    ("ZDR", "zero data retention"),
+]
+
+# Variables named in the third-party guide that first-party documentation does not
+# confirm. Publishing an env var that does not exist is worse than omitting it, so the
+# gate keeps them out until someone verifies them and removes the entry here.
+UNVERIFIED_TOKENS = [
+    "DISABLE_BUG_COMMAND",
 ]
 
 
@@ -177,6 +196,13 @@ def check(path: Path) -> int:
     for t in BANNED:
         if t in h:
             problems.append(f"banned term present: {t!r}")
+
+    for t in UNVERIFIED_TOKENS:
+        if t in h:
+            problems.append(
+                f"{t} appears but is not confirmed by first-party docs — verify it and "
+                "remove it from UNVERIFIED_TOKENS, or take it off the page"
+            )
 
     # A plain-language page must define its jargon before using it.
     for acro, expansion in FIRST_MENTION:

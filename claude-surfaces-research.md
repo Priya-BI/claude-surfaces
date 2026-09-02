@@ -319,6 +319,174 @@ were not designed to see, holding tools that can escalate and destroy."
 
 ---
 
+## H. Data flow, retention, and telemetry
+
+Added 2026-09-02 after validating a third-party community guide
+(`FlorianBruniaux/claude-code-ultimate-guide`, `guide/security/data-privacy.md`) against
+first-party sources. The guide is a useful checklist of *topics* and is directionally
+right on most of them; it is not a source of fact and is imprecise in three places
+recorded below.
+
+### H1. What is transmitted
+
+**[S30] [1P]** Claude Code data usage — <https://code.claude.com/docs/en/data-usage>
+Anything Claude reads becomes part of the request: prompts, the contents of files it
+opens, the output of commands it runs, and the results returned by MCP tools. There is
+no separate "code only" channel.
+
+**[S31] [1P]** Claude Code monitoring —
+<https://code.claude.com/docs/en/monitoring-usage>
+The OpenTelemetry path is a *different* path and is opt-in. Verbatim: "OpenTelemetry
+export to your backend is opt-in and requires explicit configuration"; "Raw file contents
+and code snippets are not included in metrics or events"; "User prompt content is not
+collected by default. Only prompt length is recorded. To include prompt content, set
+`OTEL_LOG_USER_PROMPTS=1`"; assistant response text likewise via
+`OTEL_LOG_ASSISTANT_RESPONSES=1`, and "the response text is sent only to the OTel endpoint
+you configure, **never to Anthropic**". Also: "When authenticated via OAuth, `user.email`
+is included in telemetry attributes. If this is a concern for your organization, work with
+your telemetry backend to filter or redact this field."
+
+### H2. Retention
+
+**[S32] [1P]** How long do you store my organization's data? —
+<https://privacy.anthropic.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data>
+(article dated July 1 2026). Verbatim: "For Anthropic API users, we automatically delete
+inputs and outputs on our backend within 30 days of receipt or generation, except: When
+you use a service with longer retention under your control (e.g. Files API) · When you and
+we have agreed otherwise (e.g. zero data retention agreement) · If we need to retain them
+for longer to enforce our Usage Policy · In compliance with the law."
+
+Crucially, and **this is where the third-party guide is misleading**: "If you use our other
+commercial products (e.g. Claude for Work, Claude for Enterprise, Anthropic Console, etc.)
+that allow you to save and continue conversations with Claude, **we retain your chats and
+coding sessions in the product to provide you with a consistent product experience.**"
+Deletion is user-driven: a deleted conversation is "Removed from your chat history
+immediately" and "Deleted from our back-end storage systems within 30 days". Incognito
+chats "are automatically deleted within 30 days unless flagged as a Usage Policy
+violation."
+→ So 30 days is the API backend window and the post-deletion purge window. It is **not** a
+cap on how long a saved Team or Enterprise coding session lives.
+
+**[S33] [1P]** Claude Code data usage, retention section [S30]. Consumer accounts
+(Free/Pro/Max): "Users who allow data use for model improvement: 5-year retention period
+to support model development and safety improvements"; "Users who don't allow data use for
+model improvement: 30-day retention period"; changeable at any time in privacy settings.
+→ The guide's consumer rows are **correct**. Credit where due.
+
+**[S34] [1P]** Feedback data — [S32] and the consumer article
+<https://privacy.anthropic.com/en/articles/10023548-how-long-do-you-store-my-data>
+Verbatim, and present in **both** the consumer and commercial articles: "Where you have
+provided feedback to us (e.g. by submitting feedback through our thumbs up/down button or
+sent bug reports), we retain data associated with that submission for **5 years**."
+→ The most decision-relevant fact in this whole section: a thumbs-down or a bug report
+moves that submission into a five-year bucket, on a commercial plan too.
+
+### H3. Training
+
+**[S35] [1P]** [S30], data training policy. Commercial users — "Team and Enterprise plans,
+API, 3rd-party platforms, and Claude Gov" — verbatim: "Anthropic does not train generative
+models using code or prompts sent to Claude Code under commercial terms, **unless the
+customer has chosen to provide their data** to us for model improvement (for example, the
+Developer Partner Program)." And: "An organization admin can expressly opt-in to the
+Development Partner Program."
+→ "No training by default" is accurate, but it is a default an **org admin can switch
+off**. Worth knowing before quoting it as a guarantee.
+
+### H4. Zero data retention (ZDR)
+
+**[S36] [1P]** Zero data retention — <https://code.claude.com/docs/en/zero-data-retention>
+Verbatim: "When ZDR is enabled, prompts and model responses generated during Claude Code
+sessions are processed in real time and not stored by Anthropic after the response is
+returned, except where needed to comply with law or combat misuse." And the part that
+matters operationally: "**ZDR is not included in the standard Claude for Enterprise plan
+and cannot be enabled from your admin settings.** It is available to qualified accounts and
+requires separate enablement by Anthropic." ZDR on Enterprise additionally unlocks cost
+controls per user, the Analytics dashboard, server-managed settings, and audit logs. It
+"applies only to Anthropic's direct platform" — not Amazon Bedrock or Google Cloud's Agent
+Platform.
+
+**[S37] [1P]** ZDR scope —
+<https://privacy.anthropic.com/en/articles/8956058-i-have-a-zero-retention-agreement-with-anthropic-what-products-does-it-apply-to>
+(dated June 9 2026). ZDR covers "eligible Anthropic APIs, Anthropic products that use your
+Commercial organization API key (including Claude Code accessed via the API), and Claude
+Code for Enterprise plans." Note: "Under these arrangements, Anthropic still retains **User
+Safety classifier results** in order to enforce our Usage Policy." So ZDR is not literally
+zero.
+
+**[S38] [1P]** Data retention practices for Covered Models —
+<https://support.claude.com/en/articles/15425996-data-retention-practices-for-covered-models>
+Covered models require retention to be **turned on**, which is mutually exclusive with ZDR.
+Configured per workspace (Console → Workspace → Manage → Privacy Controls). Platform
+specific, and directly relevant to an Azure estate: "**Through Claude in Azure Foundry:**
+Retention is configured for each Azure Subscription. If you have zero data retention
+configured, then you will need to create and use a **separate Azure Subscription** to
+access these models."
+→ ZDR therefore constrains model choice. Corroborated by the bundled `claude-api` skill
+reference, which notes Claude Fable 5.1 is unavailable under ZDR unless expressly
+authorised.
+
+### H5. Telemetry and the two subprocessors
+
+**[S39] [1P]** [S30], telemetry services. Claude Code connects to **Statsig** for
+operational metrics (latency, reliability, usage patterns) and **Sentry** for error
+logging. Neither includes code or file paths. Encrypted with TLS in transit and 256-bit AES
+at rest. Opt out with `DISABLE_TELEMETRY` and `DISABLE_ERROR_REPORTING` respectively.
+
+**[S40] [1P]** Environment variables reference — <https://code.claude.com/docs/en/env-vars>
+Confirmed as set-only variables: `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`,
+`DISABLE_TELEMETRY`, `DISABLE_ERROR_REPORTING`. Also named: `DO_NOT_TRACK`,
+`DISABLE_GROWTHBOOK`.
+**The cost the guide omits:** these variables also stop Claude Code fetching feature flags,
+which disables Remote Control, messaging sessions beyond the local machine,
+`claude import` / `/import`, the advisor tool, and reading or replying to artifact
+comments. Turning telemetry off is a tradeoff, not a free win.
+
+**[S41] [1P]** [S30], feedback survey. `CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1` is
+confirmed. "Nothing is uploaded unless you explicitly select **Yes**." Organisations with
+ZDR, with product feedback disabled by policy, or with
+`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set "never see this follow-up". Survey responses
+"cannot be used to train our AI models". `feedbackSurveyRate` controls frequency;
+`CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL=1` logs ratings to your own collector only.
+→ **Third correction to the guide:** it states surveys send "only your numeric rating,
+never transcripts". First-party says the follow-up can submit **session transcripts** after
+the rating prompt — with explicit consent, and never for training. The guide's parenthetical
+is wrong.
+
+**[S42] [3P] — `UNVERIFIED`, deliberately excluded from the deliverables.**
+The guide lists `DISABLE_BUG_COMMAND=1` as disabling the `/bug` command. This variable does
+**not** appear in the first-party environment-variables reference [S40] or the data-usage
+page [S30]. It may exist, may be renamed, or may be gone. Because the page is published
+publicly, the variable name is omitted from both deliverables; the confirmed umbrella
+`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` [S40] and the confirmed survey variable [S41]
+are used instead. The *governance* point — feedback and bug submissions carry five-year
+retention [S34] — stands on first-party sourcing independently of any variable name.
+
+### H6. Cowork does not read server-managed settings
+
+**[S43] [1P]** Deploy managed settings —
+<https://code.claude.com/docs/en/managed-settings>
+Verbatim: "Cowork in the Claude Desktop app runs its sessions on Claude Code. In a Cowork
+session, Claude Code **never fetches server-managed settings from the claude.ai admin
+console, even when the user signs in with a Team or Enterprise account**, so which policy
+applies depends on where the session runs: **On the user's machine**: by default, Claude
+Code in a Cowork session reads the MDM or OS-level policy and the managed settings file on
+that device, so deploy policy there."
+Related keys named on the same page: `requireCoworkFullVmSandbox` (Claude Desktop
+configuration) and `allowManagedPermissionRulesOnly`, which interacts with the allow rules
+Cowork supplies for a session's working folders.
+→ Not in the third-party guide, which does not cover Cowork at all. This is the sharpest
+governance finding of the validation pass: admin-console policy silently does not reach
+local Cowork sessions, and the mitigation is device policy or a full VM sandbox.
+
+### H7. Not carried over
+
+The guide's comparison of Claude Code against Cursor and GitHub Copilot ("default retention
+5 years", "Copilot 30 days") is off-thesis and not independently verifiable from
+first-party sources; it is excluded. Its MCP hygiene rules — never connect production
+databases, use read-only database users, anonymise development data, keep test datasets
+minimal, audit MCP server sources — are sound recommendations rather than factual claims,
+and are adopted as recommendations with that status made clear.
+
 ## G. Deliberately excluded
 
 - **No Claude–Fabric product integration is claimed.** Fabric is the work context of

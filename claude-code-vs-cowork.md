@@ -37,6 +37,13 @@ the employee's own laptop outside central retention with no admin export and no
 deletion endpoint yet, and sits behind network egress rules that explicitly do not
 apply to web fetch, web search, or MCP servers.
 
+**And there is a second axis that most comparisons — including the first version of this
+document — leave out entirely: what actually travels to the vendor, and how long it is
+kept.** Control answers "who may act, and what can I prove." Retention answers "and how
+long does someone else hold it." Section 05 covers it. The short version is that neither
+tool differs — but the numbers are not the ones usually quoted, and a feedback button
+quietly carries a five-year retention period.
+
 **So:** buy seats, not tools. Give the platform engineers Premium seats and Claude Code.
 Turn Cowork's cloud sessions off on day one and decide deliberately whether to turn them
 back on. And treat the MCP path to Fabric as the one your existing controls cannot see.
@@ -181,7 +188,106 @@ diff to review.
 
 ---
 
-## 05 · Head to head
+## 05 · What leaves, and how long it stays
+
+The previous section asked how far each tool can reach. This one asks the other half of the
+question, and it is the half most comparisons skip: what actually travels to the vendor, and
+how long the vendor keeps it.
+
+> **In plain terms.** There is no "code only" channel. **Anything the agent reads becomes
+> part of the request** — the files it opens, the output of the commands it runs, and the
+> rows an MCP tool hands back. If a query returns a hundred customer records, those hundred
+> records are in the request. That is true on both Fabric routes, and it is the concrete
+> mechanism behind the compliance-boundary warning quoted in section 09.
+
+### Where it goes
+
+Three destinations, and only one of them is subject to the retention buckets below:
+
+| Destination | What it receives | Retention |
+|---|---|---|
+| **Anthropic API** | Prompts and model responses — including everything the agent read to produce them | Per your plan; see below |
+| **Statsig** (metrics) and **Sentry** (errors) | Operational metrics and error logs. **No code, no file paths.** TLS in transit, 256-bit AES at rest | Their own; not the buckets below |
+| **Your OpenTelemetry collector** | Only what you configure. Opt-in | Yours entirely — this path "never" reaches Anthropic |
+
+### How long it is kept
+
+| What | Retention | The detail that matters |
+|---|---|---|
+| API inputs and outputs | **30 days** | Automatically deleted from the backend, with four stated exceptions: a service with longer retention under your control, a zero-retention agreement, Usage Policy enforcement, and legal compliance |
+| **Saved Team / Enterprise chats and coding sessions** | **Until deleted** | Retained in the product "to provide you with a consistent product experience." Deleting removes it from history immediately and purges the backend within 30 days. **This is not a 30-day cap** |
+| Anything submitted as feedback | **5 years** | Thumbs up/down and bug reports. Stated in both the consumer and the commercial articles, so a Team plan does not exempt you |
+| Incognito chats | 30 days | Deleted automatically unless flagged as a Usage Policy violation |
+| Consumer accounts, model improvement on | 5 years | Not your situation on Team, but it is where the widely quoted "5 years" figure comes from |
+| Consumer accounts, model improvement off | 30 days | Changeable at any time in privacy settings |
+
+> **The correction worth carrying into a meeting.** You will read in plenty of places that
+> "Team and Enterprise data is deleted after 30 days." That conflates two things. Thirty
+> days is the *API backend* deletion window and the post-deletion purge window. Your saved
+> coding sessions live in the product until somebody deletes them. If your argument to a
+> reviewer depends on a 30-day ceiling, it does not have one.
+
+### Training, and the default an admin can switch off
+
+On commercial terms — Team, Enterprise, API, third-party platforms — Anthropic "does not
+train generative models using code or prompts sent to Claude Code." That is the sentence
+worth quoting. But note the clause that follows: *unless the customer has chosen to provide
+their data*, for example through the Development Partner Program, which **an organisation
+admin can expressly opt into**. "No training by default" is a default, not a property of
+the plan.
+
+### Zero data retention, and why it is not a switch you can flip
+
+**Zero data retention** (ZDR) means prompts and responses are "processed in real time and
+not stored by Anthropic after the response is returned, except where needed to comply with
+law or combat misuse." Anthropic still retains User Safety classifier results to enforce the
+Usage Policy, so it is not literally zero.
+
+Four things people assume about it that are wrong:
+
+- **It is not part of Enterprise.** It "is not included in the standard Claude for
+  Enterprise plan and cannot be enabled from your admin settings" — Anthropic enables it per
+  organisation for qualified accounts, through your account team.
+- **It is not available on Team at all.** Enterprise, or an API key from a commercial
+  organisation.
+- **It does not travel to other clouds.** ZDR for Claude Code "applies only to Anthropic's
+  direct platform" — not Amazon Bedrock or Google Cloud's Agent Platform.
+- **It restricts which models you can use.** Anthropic's covered models require retention to
+  be turned *on*, so the two are mutually exclusive. On Claude in Azure Foundry, retention is
+  configured per Azure subscription, and "if you have zero data retention configured, then
+  you will need to create and use a separate Azure Subscription to access these models." For
+  an Azure-based estate that is an architectural consequence, not a footnote.
+
+### For the implementer — telemetry, and what turning it off costs
+
+Two named subprocessors sit outside the API path: **Statsig** for operational metrics
+(latency, reliability, usage patterns) and **Sentry** for error logging. Neither receives
+code or file paths; both are encrypted with TLS in transit and 256-bit AES at rest. Opt out
+with `DISABLE_TELEMETRY` and `DISABLE_ERROR_REPORTING`.
+`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` covers everything at once; `DO_NOT_TRACK` and
+`CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY` are also honoured.
+
+**But read the cost before you set them.** Those same variables stop Claude Code fetching
+feature flags, which disables Remote Control, messaging sessions beyond the local machine,
+`claude import` and `/import`, the advisor tool, and reading or replying to artifact
+comments. This is a tradeoff, not a free win — which is what the community guides
+recommending "just disable them all" tend to leave out.
+
+On the session-quality survey: nothing is uploaded unless the user explicitly selects Yes,
+and survey responses cannot be used to train models. But the follow-up can submit *session
+transcripts*, not merely a numeric rating — and feedback submissions carry the five-year
+retention above. Organisations with zero data retention, or with product feedback disabled
+by policy, never see the prompt. `feedbackSurveyRate` tunes frequency instead of disabling.
+
+The OpenTelemetry path is separate and opt-in, and its data goes only to the collector you
+configure. Two defaults worth knowing: prompt and response *content* are not collected
+unless you set `OTEL_LOG_USER_PROMPTS` or `OTEL_LOG_ASSISTANT_RESPONSES`, and when users
+authenticate via OAuth, `user.email` is included in telemetry attributes — Anthropic's
+guidance is to filter or redact it in your own backend if that matters to you.
+
+---
+
+## 06 · Head to head
 
 Every row below is sourced first-party. See the facts basis for the exact quotes.
 
@@ -193,7 +299,9 @@ Every row below is sourced first-party. See the facts basis for the exact quotes
 | **Per-action gate** | Asks before edits, tests, commands; approve once or always; explicit deny rules | Per-task approval for write-capable connector tools; "always allow" **off by default** |
 | **Read-only exemption** | Built-in list (`ls`, `cat`, `git status`) runs without asking | Only if the connector annotates the tool read-only — most custom connectors don't, so all their tools are gated |
 | **Unattended mode** | Auto mode: a separate classifier reviews actions and blocks unsafe ones; org can disable it | Cloud sessions; on by default on Team |
-| **Web fetch** | `curl`/`wget` **not auto-approved**; can be denied outright | Egress rules **do not apply** to web fetch, web search, or MCP |
+| **Reachability — can it reach a host?** | `curl`/`wget` **not auto-approved**; can be denied outright | Egress rules **do not apply** to web fetch, web search, or MCP |
+| **What reaches Anthropic** | Identical, and often misunderstood: **everything the agent reads** — file contents, command output, MCP results — is in the request | Same. Neither surface, and neither Fabric route, changes this |
+| **Retention of what it reads** | 30 days for API data, saved sessions until deleted, five years for anything sent as feedback | Same plan, same rules — see section 05 |
 | **Isolation** | Sandboxed bash with filesystem + network isolation; working-directory boundary; devcontainers | Cloud sessions in an Anthropic-managed environment; local sessions on the user's machine |
 | **Cloud session audit** | "All operations in cloud sessions are logged for compliance and audit purposes" | Captured in the Compliance API; OpenTelemetry stream "doesn't replace audit logging for compliance purposes" |
 | **Local history** | Repo under git; session data under Anthropic retention | Local session history **not** under standard retention, **no** admin export, **no** deletion endpoint yet |
@@ -208,7 +316,7 @@ three, Claude Code is currently ahead.
 
 ---
 
-## 06 · Risk register — Claude Code
+## 07 · Risk register — Claude Code
 
 | # | Risk | Why it's real | Mitigation available today |
 |---|---|---|---|
@@ -224,7 +332,7 @@ faster.
 
 ---
 
-## 07 · Risk register — Cowork
+## 08 · Risk register — Cowork
 
 | # | Risk | Why it's real | Mitigation available today |
 |---|---|---|---|
@@ -237,9 +345,21 @@ faster.
 | W7 | **Document-borne prompt injection.** At launch, researchers demonstrated exfiltration via a poisoned document, and a destructive command via indirect injection | The user population is least equipped to spot it | Keep "always allow" off for write tools (the default); curate the plugin catalogue; train users that documents are untrusted input |
 | W8 | **Inherited browser identity** | When browsing, the agent acts as whoever the user is signed in as | Restrict or disable browser use; do not rely on "it only sees what the user sees" as a comfort |
 
+| W9 | **Admin-console policy does not reach Cowork.** In a Cowork session Claude Code "never fetches server-managed settings from the claude.ai admin console, even when the user signs in with a Team or Enterprise account" | The most dangerous kind of gap: an admin configures policy centrally, sees it saved, and reasonably believes it applies. On a local Cowork session it does not | Deploy policy to the **device** instead — MDM or OS-level policy and the managed-settings file, which a local Cowork session does read. Or require a full VM sandbox for Cowork sessions |
+
 **Net:** the controls that exist are sensible and the defaults on approvals are
 conservative. But **W1, W3 and W6 have no mitigation on a Team plan** — they are
 accept-or-decline. That, not prompt injection, is what makes Cowork the harder rollout.
+
+> **W9 changes the shape of the scoping problem.** W1 says you cannot scope Cowork *from
+> the admin console* on a Team plan, and that is still true. But W9 says the admin console
+> was never the whole control surface for Cowork anyway — local sessions read **device**
+> policy. So if you already manage laptops with MDM, you have a lever the console does not
+> give you, and "all-or-nothing" is less absolute than it first appears. Two caveats: it
+> governs Claude Code's settings, not Cowork's organisation-level toggles, so it does not
+> restore per-team enablement or fix project creation (W6); and it only helps if your device
+> fleet is actually managed, which for a twelve-person team is a real question rather than a
+> safe assumption.
 
 > **On W7's evidence.** Those demonstrations were against a January 2026 build, before
 > general availability and before several of the controls above shipped. They are cited
@@ -248,7 +368,7 @@ accept-or-decline. That, not prompt injection, is what makes Cowork the harder r
 
 ---
 
-## 08 · Reaching Microsoft Fabric: MCP server or CLI?
+## 09 · Reaching Microsoft Fabric: MCP server or CLI?
 
 Your team's agent has to actually touch Fabric. There are two ways, and they differ far
 more than they look.
@@ -290,6 +410,41 @@ workspace roles, and the conclusion is not "MCP is unsafe." It is: **MCP is the 
 existing egress controls and approval gates were not built to see, and it carries tools
 that can escalate privileges and destroy things.**
 
+### The part that is the same on both routes — and it is the data itself
+
+Microsoft's warning that an MCP integration "may process data outside of Fabric's
+compliance boundaries" is abstract. Here is the concrete mechanism:
+
+> You ask for recent orders. The tool runs a query. It returns a hundred rows — names,
+> email addresses, order values. **Those hundred rows are now in the request**, and they
+> are retained under whatever bucket section 05 put you in. The agent cannot reason about
+> data it has not been given, so any answer about your data implies your data left Fabric.
+
+**And the CLI route is no different.** Command output is read the same way. A `fab` command
+that prints rows sends those rows. On this axis the two routes are *equivalent*, and the
+earlier row about the egress allowlist is about something else entirely — whether the agent
+can *reach* a host, not whether what it reads is transmitted.
+
+So the recommendation below rests on identity, gating and audit — **not** on keeping Fabric
+data inside Fabric. Nothing on either route does that. What limits your exposure is not the
+transport, it is the query: whose credentials ran it, what scope they had, and how much came
+back.
+
+### Hygiene that follows from that
+
+Recommendations rather than vendor statements, and they apply to both routes:
+
+- **Never point either route at production data.** This is the one that actually reduces
+  exposure, and it outranks every other control here.
+- **Use read-only identities for anything exploratory.** It bounds the damage from a wrong
+  call and from a prompt-injected one.
+- **Prefer aggregates and narrow projections to `SELECT *`.** Less comes back, so less is
+  transmitted and retained. Ask for the shape of the answer, not the rows.
+- **Anonymise or synthesise development datasets.** A realistic schema with unrealistic
+  people gets you almost all the value.
+- **Audit the MCP servers you install.** The first-party Fabric servers are Microsoft's; a
+  community server is third-party code you are handing an Entra token to.
+
 ### The trap on the CLI path
 
 The CLI is not automatically safer, and here is where it goes wrong. Because
@@ -315,7 +470,7 @@ for a human's daily work is the single worst configuration available on either p
 
 ---
 
-## 09 · What a normal day looks like
+## 10 · What a normal day looks like
 
 **On the CLI path.** An engineer opens the terminal, and once a day runs `fab auth login`
 and signs in as themselves in the browser. Their agent proposes a command —
@@ -343,7 +498,7 @@ company, it was untrusted input handed to an agent.
 
 ---
 
-## 10 · What I'd do
+## 11 · What I’d do
 
 **Buy Mix B, annually.** Four Premium seats for the people who live in an agent all day,
 eight Standard for everyone else, $6,720 a year for twelve people. Start everyone on
@@ -366,13 +521,26 @@ groups and custom roles." If it does not, enable it, keep write-tool approvals p
 (the default), curate the plugin catalogue, and tell people that a document from outside
 the company is untrusted input.
 
-**For Fabric, use the CLI with interactive per-user login for daily work.** Not because
-the CLI is inherently safer, but because it keeps three things you otherwise lose: a named
-human in the audit log, a text command a rule can gate, and traffic your egress policy can
-actually see. Use the Core MCP server where its discovery is worth it — read-heavy
-exploration by people who understand what the tool menu contains — and keep it off the
-path that touches sensitive workspaces while it is still in preview. Reserve service
-principals for genuinely unattended automation, each with its own least-privilege role.
+**Don't point either Fabric route at production data.** This goes first because it is the
+only recommendation here that reduces what actually leaves your estate. Every other control
+in this document governs *who* may act and *what you can prove* afterwards; none of them
+stop query results being transmitted and retained. Development and anonymised data,
+read-only identities, narrow projections.
+
+**Then, for Fabric, use the CLI with interactive per-user login for daily work.** Not
+because the CLI is inherently safer, and explicitly *not* because it keeps data inside
+Fabric — it doesn't, and neither does the MCP route. It keeps three other things you
+otherwise lose: a named human in the audit log, a text command a rule can gate, and traffic
+your network policy can actually see. Use the Core MCP server where its discovery is worth
+it — read-heavy exploration by people who understand what the tool menu contains — and keep
+it off the path that touches sensitive workspaces while it is still in preview. Reserve
+service principals for genuinely unattended automation, each with its own least-privilege
+role.
+
+**Tell people what the feedback button costs.** A thumbs-down or a bug report moves that
+conversation into a five-year retention bucket, on your commercial plan, regardless of the
+thirty-day norm everywhere else. That is a one-line thing to say in an onboarding note and
+an expensive thing to discover afterwards.
 
 ### The case against all of that
 
@@ -417,7 +585,26 @@ status claim here should be re-checked before it is relied on.
 **Corrections made while researching this.** Cowork is not a research preview and is not
 gated behind a Premium seat — both were true earlier in 2026 and are not now. Cowork *is*
 captured in the Compliance API; a widely repeated claim that it is not is wrong. The real
-gaps are narrower and are listed in section 07.
+gaps are narrower and are listed in section 08.
+
+**Revised 2026-09-02 after validating a community guide.** Section 05 and the data-egress
+passage in section 09 were added after checking this document against a widely-shared
+third-party guide to Claude Code privacy. The exercise found a real omission — this document
+covered control but not data — and three imprecisions in the guide worth naming, since the
+same claims circulate widely:
+
+- "Team and Enterprise = 30 days" conflates the API backend deletion window with in-product
+  retention of saved sessions, which have no such cap.
+- The session-quality survey can submit session transcripts, not merely a numeric rating.
+- Advice to disable telemetry omits that the same variables also disable feature-flag-gated
+  functionality, including Remote Control and the advisor tool.
+
+One environment variable the guide lists could not be confirmed in first-party
+documentation, so it is deliberately absent here; the validator blocks it from being
+reintroduced until someone verifies it. Sections 06 and 11 were corrected in the same pass:
+what the agent reads is transmitted on *both* Fabric routes, so that axis never
+distinguished them. The guide's consumer-retention rows, by contrast, check out
+first-party — credit where it is due.
 
 **The organisation is invented.** No real organisation, person, workspace or object name
 appears anywhere in this document.
