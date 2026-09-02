@@ -1,6 +1,6 @@
 # Code, Cowork, and Fabric
 
-**Read it here → https://datablueprintlab.github.io/claude-surfaces/**
+**Read it here → https://data-blueprint-lab.github.io/claude-surfaces/**
 
 A comparison of Anthropic's two agentic surfaces — **Claude Code** and **Claude
 Cowork** — on cost, security and governance, plus the two ways an agent reaches
