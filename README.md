@@ -1,11 +1,11 @@
 # Code, Cowork, and Fabric
 
-**Read it here → https://data-blueprint-lab.github.io/claude-surfaces/**
+**Read it here → https://priya-bi.github.io/claude-surfaces/**
 
-**Short version, five sections →** https://data-blueprint-lab.github.io/claude-surfaces/claudecode-vs-cowork/ — the costed half only: one shared allowance, a twelve-person seat mix, blast radius,
+**Short version, five sections →** https://priya-bi.github.io/claude-surfaces/claudecode-vs-cowork/ — the costed half only: one shared allowance, a twelve-person seat mix, blast radius,
 and the head-to-head table. Same source facts, no risk registers or Fabric routes.
 
-**Copilot instead of Claude? →** https://data-blueprint-lab.github.io/claude-surfaces/claudecode-vs-copilot/ — Copilot in
+**Copilot instead of Claude? →** https://priya-bi.github.io/claude-surfaces/claudecode-vs-copilot/ — Copilot in
 Fabric against Claude Code: the compliance boundary, the capacity-unit meter, pros and cons,
 and a routing rule. It opens by separating the three different products people call
 "Copilot on Fabric", two of which sit outside the boundary.

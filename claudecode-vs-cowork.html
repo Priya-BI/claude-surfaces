@@ -594,7 +594,7 @@ pattern rather than row by row, because the pattern is the finding.</p>
 <tr><td><b>Unattended mode</b></td><td>Auto mode: a separate classifier reviews actions and blocks unsafe ones; the org can disable it</td><td>Cloud sessions — <b>on by default on Team</b></td></tr>
 <tr><td><b>Reachability — can it reach a host?</b></td><td><code>curl</code> / <code>wget</code> <b>not auto-approved</b>; can be denied outright</td><td>Egress rules <b>do not apply</b> to web fetch, web search, or MCP</td></tr>
 <tr><td><b>What reaches Anthropic</b></td><td colspan="2" style="text-align:center">Identical, and often misunderstood: <b>everything the agent reads</b> — file contents, command output, MCP results — is in the request. Neither surface, and neither Fabric route, changes this</td></tr>
-<tr><td><b>Retention of what it reads</b></td><td colspan="2" style="text-align:center">Same plan, same rules: 30 days for API data, saved sessions until deleted, five years for anything sent as feedback. Detailed in the <a href="https://data-blueprint-lab.github.io/claude-surfaces/#s5">full comparison</a></td></tr>
+<tr><td><b>Retention of what it reads</b></td><td colspan="2" style="text-align:center">Same plan, same rules: 30 days for API data, saved sessions until deleted, five years for anything sent as feedback. Detailed in the <a href="https://priya-bi.github.io/claude-surfaces/#s5">full comparison</a></td></tr>
 <tr><td><b>Isolation</b></td><td>Sandboxed bash with filesystem and network isolation; working-directory boundary; devcontainers</td><td>Cloud sessions in an Anthropic-managed environment; local sessions on the user's own machine</td></tr>
 <tr><td><b>Cloud session audit</b></td><td>"All operations in cloud sessions are logged for compliance and audit purposes"</td><td>Captured in the Compliance API; the OpenTelemetry stream "doesn't replace audit logging for compliance purposes"</td></tr>
 <tr><td><b>Local history</b></td><td>Repo under version control; session data under standard retention</td><td><b>Not</b> under standard retention, <b>no</b> admin export, <b>no</b> deletion endpoint yet</td></tr>
@@ -635,7 +635,7 @@ The real gaps are narrower, and are the three dashed paths in section 04.</p>
 and the head-to-head table, renumbered to run 01–05 here. What leaves for the vendor and how
 long it is kept, the two risk registers, the MCP-versus-CLI routes into Fabric, and the
 recommendation are in the full version,
-<a href="https://data-blueprint-lab.github.io/claude-surfaces/">Code, Cowork, and Fabric</a>.</p>
+<a href="https://priya-bi.github.io/claude-surfaces/">Code, Cowork, and Fabric</a>.</p>
 
 <p><b>The organisation is invented.</b> No real organisation, person, workspace or object
 name appears anywhere on this page. The twelve-person Fabric team is a composite built to
