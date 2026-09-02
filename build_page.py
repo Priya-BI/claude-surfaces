@@ -44,6 +44,13 @@ PAGES = [
         "The costed half of the Claude Code versus Claude Cowork comparison: one shared "
         "allowance, a twelve-person seat mix, blast radius, and the head-to-head table.",
     ),
+    (
+        Path("claude-code-vs-copilot.html"),
+        Path("claudecode-vs-copilot/index.html"),
+        "Copilot in Fabric compared against Claude Code reaching Fabric from a developer "
+        "machine: the compliance boundary, the capacity-unit meter, pros and cons, and a "
+        "routing rule for deciding which tool a task belongs to.",
+    ),
 ]
 
 

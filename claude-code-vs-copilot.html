@@ -1,0 +1,877 @@
+<title>Copilot, Claude Code, and Fabric</title>
+<style>
+/* ── Palette: warm editorial. Inherited from the repo's existing explainer pages
+   (docs/databricks/agent-platform/, leads/accuracy-cliff/) so this page reads as
+   part of the same set. Light on bare :root, dark redefined twice so an explicit
+   data-theme wins in both directions. Local font stacks only — zero egress. ── */
+:root{
+  --bg:#FBF8F3; --surface:#FFFFFF; --surface-2:#F4EFE7;
+  --ink:#1F1B16; --ink-2:#4A4239; --muted:#6B6259;
+  --line:#E3DACC; --line-2:#CFC3B0;
+  --accent:#B4531F; --accent-soft:#F6E7DC;
+  --teal:#1F5F5B; --teal-soft:#DFEDEB;
+  --gold:#8A6A12; --gold-soft:#F6EED8;
+  --red:#9B2C2C; --red-soft:#F7E4E4;
+  --violet:#5B3A8A; --violet-soft:#EBE3F5;
+  --shadow:0 1px 2px rgba(31,27,22,.06),0 8px 24px rgba(31,27,22,.05);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16130F; --surface:#201C17; --surface-2:#282219;
+    --ink:#F2EDE4; --ink-2:#D8D0C4; --muted:#A69C8F;
+    --line:#332C24; --line-2:#4A4034;
+    --accent:#E8834A; --accent-soft:#3A2418;
+    --teal:#5FB8B0; --teal-soft:#12302E;
+    --gold:#D6AE49; --gold-soft:#332A12;
+    --red:#E88080; --red-soft:#3A1E1E;
+    --violet:#B79BE0; --violet-soft:#251A38;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16130F; --surface:#201C17; --surface-2:#282219;
+  --ink:#F2EDE4; --ink-2:#D8D0C4; --muted:#A69C8F;
+  --line:#332C24; --line-2:#4A4034;
+  --accent:#E8834A; --accent-soft:#3A2418;
+  --teal:#5FB8B0; --teal-soft:#12302E;
+  --gold:#D6AE49; --gold-soft:#332A12;
+  --red:#E88080; --red-soft:#3A1E1E;
+  --violet:#B79BE0; --violet-soft:#251A38;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:16.5px;line-height:1.68;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:74rem;margin:0 auto;padding:0 1.5rem 6rem}
+
+header{border-bottom:1px solid var(--line);background:var(--surface-2);padding:3.5rem 1.5rem 2.75rem;margin-bottom:2.5rem}
+header .inner{max-width:74rem;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 .9rem}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,4.4vw,3.1rem);line-height:1.08;
+  letter-spacing:-.02em;margin:0 0 1rem;max-width:34ch;text-wrap:balance}
+.standfirst{font-size:1.14rem;color:var(--ink-2);max-width:62ch;margin:0 0 1.4rem}
+.meta{display:flex;flex-wrap:wrap;gap:.5rem 1.6rem;font-family:var(--mono);font-size:.76rem;
+  color:var(--muted);border-top:1px solid var(--line-2);padding-top:1.1rem;margin-top:1.5rem}
+.meta b{color:var(--ink-2);font-weight:500}
+
+h2{font-family:var(--serif);font-size:1.9rem;font-weight:600;letter-spacing:-.015em;
+  margin:3.8rem 0 .6rem;padding-top:1.7rem;border-top:1px solid var(--line);text-wrap:balance}
+h2 .num{font-family:var(--mono);font-size:.8rem;color:var(--accent);display:block;
+  letter-spacing:.1em;margin-bottom:.5rem;font-weight:400}
+h3{font-size:1.15rem;font-weight:650;margin:2.3rem 0 .55rem;letter-spacing:-.005em}
+p{margin:0 0 1rem;max-width:70ch}
+ul,ol{margin:0 0 1rem;padding-left:1.3rem;max-width:70ch}
+li{margin-bottom:.45rem}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+code{font-family:var(--mono);font-size:.855em;background:var(--surface-2);padding:.12em .38em;
+  border-radius:3px;border:1px solid var(--line);overflow-wrap:break-word}
+strong{font-weight:650}
+.lead{font-size:1.05rem;color:var(--ink-2);max-width:66ch}
+
+/* callouts */
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:.95rem 1.15rem;
+  border-radius:0 7px 7px 0;margin:0 0 1.4rem}
+.note.teal{border-left-color:var(--teal);background:var(--teal-soft)}
+.note.warn{border-left-color:var(--red);background:var(--red-soft)}
+.note.gold{border-left-color:var(--gold);background:var(--gold-soft)}
+.note.violet{border-left-color:var(--violet);background:var(--violet-soft)}
+.note p{margin:0;max-width:66ch}
+.note p+p{margin-top:.6rem}
+.note .lbl{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+  display:block;margin-bottom:.4rem;opacity:.85;font-weight:600}
+
+/* plain-language definition */
+.plain{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:.9rem 1.1rem;margin:0 0 1.3rem}
+.plain .t{font-family:var(--mono);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--teal);font-weight:650;display:block;margin-bottom:.35rem}
+.plain p{margin:0;font-size:1rem}
+
+/* "for the implementer" — skippable technical depth */
+.impl{border:1px dashed var(--line-2);border-left:3px solid var(--violet);border-radius:0 8px 8px 0;
+  padding:.85rem 1.1rem;margin:0 0 1.4rem;background:var(--surface)}
+.impl .hd{font-family:var(--mono);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--violet);font-weight:650;margin-bottom:.4rem}
+.impl .hd::before{content:"\2317  "}
+.impl p{margin:0;font-size:.94rem;color:var(--ink-2);max-width:68ch}
+.impl p+p{margin-top:.55rem}
+
+/* tables */
+.tw{overflow-x:auto;margin:0 0 1.5rem;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:34rem;font-size:.87rem}
+th,td{text-align:left;padding:.62rem .85rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-2);font-family:var(--mono);font-size:.7rem;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td code{font-size:.8rem}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.hi td{background:var(--teal-soft)}
+
+/* figures */
+figure{margin:1.9rem 0 2rem}
+.fig-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:1.4rem 1.2rem;overflow-x:auto;box-shadow:var(--shadow)}
+/* Default text colour is set HERE, on the container, so <text> inherits it. Do NOT
+   move it to a `svg text{fill:…}` rule: a CSS rule beats a presentation attribute,
+   so that would silently override every fill="var(--teal)" on an individual <text>. */
+.fig-box svg{display:block;width:100%;height:auto;min-width:40rem;fill:var(--ink)}
+figcaption{font-size:.83rem;color:var(--muted);margin-top:.7rem;max-width:70ch;padding-left:.1rem}
+figcaption b{color:var(--ink-2);font-weight:600}
+svg text{font-family:var(--sans)}
+svg .mono{font-family:var(--mono)}
+svg .lbl-sm{font-size:10px;fill:var(--muted)}
+svg .cap{font-size:9.5px;letter-spacing:.1em;fill:var(--muted);font-family:var(--mono)}
+svg .hd{font-size:9.5px;letter-spacing:.12em;fill:var(--muted);font-family:var(--mono)}
+
+/* pills */
+.pill{display:inline-block;font-family:var(--mono);font-size:.66rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:.16em .5em;border-radius:4px;white-space:nowrap;vertical-align:.08em}
+.ga{background:var(--teal-soft);color:var(--teal);border:1px solid var(--teal)}
+.pv{background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold)}
+.beta{background:var(--red-soft);color:var(--red);border:1px solid var(--red)}
+
+/* risk register rows */
+.rid{font-family:var(--mono);font-weight:650;color:var(--accent);white-space:nowrap}
+.nomit{font-family:var(--mono);font-size:.72rem;color:var(--red);font-weight:650}
+
+/* toc */
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1.1rem 1.3rem;margin:0 0 1rem}
+.toc .t{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem}
+.toc ol{columns:2;column-gap:2.4rem;margin:0;padding-left:1.2rem;font-size:.9rem;max-width:none}
+.toc li{margin-bottom:.28rem}
+@media(max-width:640px){.toc ol{columns:1}}
+
+/* go-deeper reading list */
+.deeper{border-left:3px solid var(--teal);background:var(--surface);border-radius:0 8px 8px 0;
+  padding:.85rem 1.1rem;margin:1.6rem 0 0}
+.deeper .t{font-family:var(--mono);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--teal);font-weight:650;margin-bottom:.5rem}
+.deeper ul{list-style:none;padding:0;margin:0;max-width:none}
+.deeper li{font-size:.87rem;margin-bottom:.4rem;color:var(--ink-2)}
+.deeper .src{font-family:var(--mono);font-size:.63rem;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--teal);color:var(--teal);border-radius:3px;padding:.1em .4em;margin-right:.45rem}
+
+footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.5rem;font-size:.83rem;color:var(--muted)}
+footer p{max-width:70ch}
+footer b{color:var(--ink-2)}
+@media(max-width:640px){
+  body{font-size:16px}
+  header{padding:2.5rem 1.15rem 2rem}
+  .wrap{padding:0 1.15rem 4rem}
+}
+
+/* ── Additions for this page only ─────────────────────────────────────────
+   A pros-and-cons pair is one object, not two cards that happen to sit side
+   by side: same edges, same inner padding, same running order (good first,
+   bad second), so the eye compares row against row rather than block against
+   block. The 3px top rule is the only thing that differs, and it carries the
+   colour each tool is drawn in throughout the page. ── */
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin:0 0 1.7rem}
+@media(max-width:760px){.pc{grid-template-columns:1fr}}
+.pc>div{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:1.05rem 1.2rem 1.15rem}
+.pc>div.code{border-top:3px solid var(--accent)}
+.pc>div.cop{border-top:3px solid var(--teal)}
+.pc h4{margin:0 0 .12rem;font-size:1.04rem;font-weight:650;letter-spacing:-.005em}
+.pc .who{font-family:var(--mono);font-size:.65rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.85rem}
+.pc ul{margin:0 0 .95rem;padding-left:1.05rem;font-size:.9rem;max-width:none}
+.pc li{margin-bottom:.38rem;color:var(--ink-2)}
+.pc ul:last-of-type{margin-bottom:0}
+.pc .g{font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:650;display:block;margin-bottom:.45rem;color:var(--teal)}
+.pc .b{color:var(--red)}
+
+/* the one-line verdict that closes a section */
+.verdict{border-left:3px solid var(--ink-2);padding:.15rem 0 .15rem 1rem;margin:0 0 1.5rem;
+  font-size:1.02rem;color:var(--ink);max-width:66ch}
+.verdict b{font-weight:650}
+</style>
+<header>
+<div class="inner">
+<p class="eyebrow">Agents on Microsoft Fabric · verified 2026-09-02</p>
+<h1>Copilot, Claude Code, and Fabric</h1>
+<p class="standfirst">Two agents, two meters, one boundary. Copilot in Fabric compared
+against Claude Code driving Fabric from a developer machine — over the Fabric
+command-line interface, or over a Model Context Protocol server — with the pros, the
+cons, and a routing rule for deciding which one a given task belongs to.</p>
+<p class="lead">Written for the person who has to answer &ldquo;so which do we
+use?&rdquo; in a design review, and needs a defensible reason rather than a
+preference.</p>
+<div class="meta">
+<span><b>Verified</b> 2026-09-02</span>
+<span><b>Sources</b> first-party, Microsoft Learn</span>
+<span><b>Companion to</b> Code, Cowork, and Fabric</span>
+<span><b>Shelf life</b> short — see section 08</span>
+</div>
+</div>
+</header>
+
+<div class="wrap">
+
+<div class="toc">
+<div class="t">On this page</div>
+<ol>
+<li><a href="#what">&ldquo;Copilot on Fabric&rdquo; is three products</a></li>
+<li><a href="#boundary">The boundary: where the rows end up</a></li>
+<li><a href="#meter">The meter: which budget pays</a></li>
+<li><a href="#proscons">Pros and cons, plainly</a></li>
+<li><a href="#head">Head to head</a></li>
+<li><a href="#when">When to use which</a></li>
+<li><a href="#both">Using both: the seam between them</a></li>
+<li><a href="#wrong">Where this could be wrong</a></li>
+<li><a href="#sources">Sources</a></li>
+</ol>
+</div>
+
+<h2 id="what"><span class="num">01</span>&ldquo;Copilot on Fabric&rdquo; is three products, not one</h2>
+
+<p>The question &ldquo;Claude Code or Copilot?&rdquo; assumes there is one Copilot on
+Fabric. There are three, and they sit on <em>opposite sides</em> of the line that matters
+most. Getting this wrong is how a team ends up believing it has a governance property it
+does not have.</p>
+
+<div class="plain">
+<span class="t">Plain language</span>
+<p>The <b>Model Context Protocol</b> is a small standard that lets a program advertise a
+menu of tools — &ldquo;list workspaces&rdquo;, &ldquo;run this query&rdquo; — to an AI
+model, which then picks one and calls it. A program that does this is called an MCP
+server. Microsoft ships several for Fabric, and any agent can connect to them: Claude
+Code, GitHub Copilot in Visual Studio Code, or something you wrote yourself.</p>
+</div>
+
+<h3>The three things people mean</h3>
+
+<ol>
+<li><b>Copilot in Fabric.</b> The chat pane and authoring help built into the Fabric
+portal — Power BI, Data Factory, notebooks, warehouse, Real-Time Intelligence. Runs on
+Azure OpenAI inside Microsoft&rsquo;s environment. Billed to your Fabric capacity.</li>
+<li><b>Fabric data agents.</b> An agent <em>you</em> build over a lakehouse, warehouse,
+semantic model or eventhouse. Usable inside Fabric — but Microsoft explicitly supports
+consuming one from outside, including <b>as an MCP server</b>, at which point it stops
+being an inside-the-boundary tool.</li>
+<li><b>GitHub Copilot in Visual Studio Code, pointed at Fabric.</b> Install the Fabric
+extension and the Fabric MCP server and, in Microsoft&rsquo;s words, &ldquo;a Fabric agent
+mode becomes available in VS&nbsp;Code Chat.&rdquo; This is a coding agent on a developer
+machine, reaching into Fabric over exactly the transport Claude Code would use.</li>
+</ol>
+
+<div class="note warn">
+<span class="lbl">The correction this page exists to record</span>
+<p>Only the <b>first</b> of the three is what people are picturing when they say
+&ldquo;Copilot keeps our data inside Fabric.&rdquo; The third is architecturally the same
+shape as Claude Code — an outside agent on an outside machine — and differs from it on
+harness and vendor, not on data residency. The second can be either, depending on where
+you consume it from.</p>
+<p>So the honest framing is not <i>Claude Code versus Copilot</i>. It is <b>in-product
+agent versus outside agent</b>, and Claude Code and GitHub Copilot are both on the
+outside.</p>
+</div>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 920 420" role="img" aria-label="A map of where Fabric data travels. A dashed boundary contains OneLake, warehouses and semantic models together with Copilot in Fabric, which runs on Microsoft-hosted Azure OpenAI. Outside the boundary sit Claude Code on a developer machine, GitHub Copilot in Visual Studio Code, and a Fabric data agent consumed as an MCP server. Arrows show rows crossing the boundary to all three outside agents.">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="var(--line-2)"/>
+</marker>
+</defs>
+
+<text x="16" y="20" class="hd">INSIDE FABRIC</text>
+<text x="470" y="20" class="hd">OUTSIDE FABRIC</text>
+
+<rect x="16" y="34" width="418" height="366" rx="12" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text x="225" y="58" text-anchor="middle" class="cap" fill="var(--teal)">COMPLIANCE BOUNDARY</text>
+
+<rect x="44" y="76" width="362" height="82" rx="8" fill="var(--surface)" stroke="var(--line-2)"/>
+<text x="225" y="108" text-anchor="middle" font-size="15" font-weight="600">OneLake · warehouses · semantic models</text>
+<text x="225" y="132" text-anchor="middle" class="lbl-sm">Row-level security, workspace roles, sensitivity labels</text>
+
+<line x1="225" y1="158" x2="225" y2="206" stroke="var(--line-2)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+<rect x="44" y="212" width="362" height="164" rx="8" fill="var(--surface)" stroke="var(--teal)" stroke-width="1.5"/>
+<text x="225" y="242" text-anchor="middle" font-size="16" font-weight="650" fill="var(--teal)">Copilot in Fabric</text>
+<text x="225" y="270" text-anchor="middle" class="lbl-sm">Azure OpenAI, hosted by Microsoft</text>
+<text x="225" y="292" text-anchor="middle" class="lbl-sm">Sees only what the signed-in user can see</text>
+<text x="225" y="314" text-anchor="middle" class="lbl-sm">Prompts and responses reach Purview audit</text>
+<text x="225" y="336" text-anchor="middle" class="lbl-sm">Billed in CU seconds to your capacity</text>
+<text x="225" y="358" text-anchor="middle" class="lbl-sm">Not used to train models</text>
+
+<line x1="436" y1="117" x2="466" y2="117" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+<line x1="436" y1="237" x2="466" y2="237" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+<line x1="436" y1="347" x2="466" y2="347" stroke="var(--gold)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+<rect x="470" y="76" width="434" height="82" rx="8" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="687" y="108" text-anchor="middle" font-size="16" font-weight="650" fill="var(--accent)">Claude Code</text>
+<text x="687" y="132" text-anchor="middle" class="lbl-sm">Fabric CLI or Fabric MCP server · billed to a plan allowance</text>
+
+<rect x="470" y="196" width="434" height="82" rx="8" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="687" y="228" text-anchor="middle" font-size="16" font-weight="650" fill="var(--accent)">GitHub Copilot in VS Code</text>
+<text x="687" y="252" text-anchor="middle" class="lbl-sm">The same Fabric MCP servers · also outside the boundary</text>
+
+<rect x="470" y="306" width="434" height="82" rx="8" fill="var(--surface)" stroke="var(--gold)" stroke-width="1.5"/>
+<text x="687" y="338" text-anchor="middle" font-size="16" font-weight="650" fill="var(--gold)">A data agent, consumed outside</text>
+<text x="687" y="362" text-anchor="middle" class="lbl-sm">Microsoft: responses may be sent outside the boundary</text>
+
+<text x="470" y="410" class="cap">EVERY ARROW CARRIES ROWS, NOT JUST QUESTIONS</text>
+</svg>
+</div>
+<figcaption><b>The line that decides everything.</b> Copilot in Fabric is the only box
+inside it. Claude Code and GitHub Copilot are the same shape as each other, so choosing
+between <em>them</em> is a choice of harness and vendor, not of governance. A Fabric data
+agent starts inside and moves outside the moment you consume it from somewhere
+else.</figcaption>
+</figure>
+
+<p><b>The rest of this page compares box 1 with box 2</b> — Copilot in Fabric against
+Claude Code — because that is the comparison that actually trades one property for
+another. Where GitHub Copilot differs from Claude Code, it is noted inline.</p>
+
+<h2 id="boundary"><span class="num">02</span>The boundary: where the rows end up</h2>
+
+<p>This is the axis that cannot be engineered away, so it goes first. Everything else on
+this page is a preference; this one is a property.</p>
+
+<h3>What Microsoft commits to for Copilot in Fabric</h3>
+
+<ul>
+<li>&ldquo;Your data isn&rsquo;t used to train models and isn&rsquo;t available to other
+customers.&rdquo;</li>
+<li>&ldquo;Data processed by Copilot in Fabric stays within your capacity&rsquo;s
+geographic region, unless you explicitly allow data to be processed outside your
+region.&rdquo; That permission is a tenant setting, and it is <b>off by default</b>.</li>
+<li>Copilot &ldquo;uses Azure OpenAI — not the publicly available OpenAI services&rdquo;,
+and &ldquo;the Service doesn&rsquo;t interact with any services by OpenAI, such as ChatGPT
+or the OpenAI API.&rdquo;</li>
+<li>Abuse monitoring: &ldquo;we no longer store prompt related data.&rdquo; The 30-day
+retention that used to apply for abuse monitoring was removed.</li>
+<li>&ldquo;Copilot can only access data that the current user has permission to
+access.&rdquo; Row-level security and workspace roles apply as they already do.</li>
+</ul>
+
+<div class="impl">
+<div class="hd">For the implementer</div>
+<p>Two exceptions to &ldquo;nothing is stored&rdquo;. Copilot in notebooks and Fabric data
+agents <em>do</em> keep conversation history across sessions, because a conversational
+agent needs it. Microsoft: it &ldquo;is stored inside the Azure security boundary, in the
+same region and in the same Azure OpenAI resources that process all your Fabric AI
+requests&rdquo;, the user can clear it at any time, and &ldquo;if the conversation history
+isn&rsquo;t manually removed, it&rsquo;s stored for 28 days.&rdquo;</p>
+<p>And a newer one: a tenant setting for &ldquo;Copilot, AI Agents and other AI experiences
+powered by OpenAI as a Microsoft Subprocessor&rdquo; now exists, <b>disabled by
+default</b>, with its own cross-region companion setting. Turning it on changes who
+processes your prompts. Microsoft points at a separate page for &ldquo;data processing
+commitments, availability limitations, and compliance exclusions&rdquo; — read that page
+before anyone flips it.</p>
+</div>
+
+<h3>What is true for Claude Code, and for any outside agent</h3>
+
+<p>There is no equivalent commitment, because there is no equivalent architecture. The
+mechanism is worth stating concretely rather than abstractly:</p>
+
+<div class="note">
+<span class="lbl">The concrete version</span>
+<p>You ask for last month&rsquo;s failed orders. The agent runs a query — through the
+Fabric command-line tool, or through an MCP server, it makes no difference. A hundred rows
+come back: names, email addresses, order values. <b>Those hundred rows are now in the
+request to the model vendor.</b> An agent cannot reason about data it has not been given,
+so any answer about your data implies your data left Fabric.</p>
+</div>
+
+<p>This is the single most-conflated point in the whole comparison, so to be explicit:
+<b>the command-line route and the MCP route are identical on this axis.</b> Command output
+is read the same way tool results are. Choosing the CLI does not keep rows inside Fabric;
+it changes who picks the action and whether a rule can stand in between, which is a
+different and also real benefit.</p>
+
+<p>On retention, the numbers usually quoted are the wrong ones. Thirty days is the API
+backend deletion window, <em>not</em> a cap on saved Team or Enterprise coding sessions,
+which are retained in-product until someone deletes them; and anything submitted as
+feedback — a thumbs-down, a bug report — carries a five-year window, on a commercial plan
+too. The companion page works through this in detail.</p>
+
+<h3>The axis nobody puts in the feature grid: who can see the prompt</h3>
+
+<p>Fabric records the API calls an outside agent makes. It does not record what the agent
+was <em>asked</em>, or what it said back — that conversation happens on the developer&rsquo;s
+machine and at the model vendor, and your Fabric tenant never sees it.</p>
+
+<p>For Copilot in Fabric, that conversation is inside Microsoft&rsquo;s audit surface.
+Purview&rsquo;s auditing for Copilot and AI applications generates records when a user
+interacts with Copilot, and Data Security Posture Management for AI is documented to
+capture user prompts, AI responses and interaction metadata across Fabric data agents and
+Copilot experiences.</p>
+
+<div class="verdict"><b>Verdict on this axis:</b> if the question is
+&ldquo;can a regulator be shown what was asked of the AI and what it answered, on
+governed data?&rdquo;, Copilot in Fabric answers it and an outside agent does not. That is
+not a tie you can close with configuration.</div>
+
+<h2 id="meter"><span class="num">03</span>The meter: which budget pays</h2>
+
+<p>People reach for &ldquo;Copilot is included&rdquo;. It is not. It is metered, and the
+meter it runs on is the same one your refreshes, queries and pipelines run on.</p>
+
+<h3>Copilot in Fabric bills in capacity units</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Operation</th><th>Unit</th><th class="num">Consumption rate</th></tr></thead>
+<tbody>
+<tr><td>Input prompt</td><td>per 1,000 tokens</td><td class="num">100 CU seconds</td></tr>
+<tr><td>Cached input prompt</td><td>per 1,000 tokens</td><td class="num">10 CU seconds</td></tr>
+<tr class="hi"><td>Output completion</td><td>per 1,000 tokens</td><td class="num">400 CU seconds</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Microsoft&rsquo;s own worked example: a request with 2,000 input and 500 output tokens
+costs <code>(2000 &times; 100 + 500 &times; 400) / 1000 = 400 CU seconds = 6.67 CU
+minutes</code>. Copilot runs as a background job, so that cost is smoothed over 24 hours,
+and on an F64 &ldquo;customers can run over 13,824 Copilot requests per day before they
+exhaust the capacity. Once the capacity is exhausted, all operations will shut
+down.&rdquo;</p>
+
+<div class="note gold">
+<span class="lbl">Scale that down before you feel comfortable</span>
+<p>13,824 requests a day is a lot — on an F64. Most teams reading this are not on an F64.
+The same arithmetic on an <b>F2</b> gives <code>2 &times; 24 = 48</code> CU-hours a day and
+<code>48 / 0.111 &asymp; 432</code> requests before the capacity is gone. That is my
+arithmetic, not Microsoft&rsquo;s, using Microsoft&rsquo;s method and Microsoft&rsquo;s
+example request size.</p>
+<p>And 432 is the number <em>if the capacity does nothing else</em> — no refreshes, no
+report queries, no pipelines. It is a ceiling, not a budget. Microsoft says the quiet part
+itself: &ldquo;Deploying broadly without validating consumption patterns can quickly
+exhaust your capacity.&rdquo;</p>
+</div>
+
+<p>Claude Code does not touch that meter. Its reasoning is billed against an Anthropic plan
+allowance shared with the other Claude surfaces; the only thing it puts on your capacity is
+the cost of the Fabric operations it actually performs, which you would have paid for if a
+human had typed them.</p>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 920 320" role="img" aria-label="Two meters side by side. On the left, one Fabric capacity bar is shared by refreshes, queries and Copilot, with a throttle threshold at the end and rates of 100 CU seconds per thousand input tokens and 400 per thousand output tokens. On the right, a separate Anthropic plan allowance bar is shared by Claude Code and chats, and cannot throttle a Fabric refresh.">
+<text x="16" y="20" class="hd">WHERE THE COST LANDS</text>
+<text x="470" y="20" class="hd">AND WHERE IT DOES NOT</text>
+
+<rect x="16" y="34" width="434" height="256" rx="10" fill="var(--surface)" stroke="var(--teal)" stroke-width="1.5"/>
+<text x="233" y="64" text-anchor="middle" font-size="16" font-weight="650" fill="var(--teal)">Your Fabric capacity</text>
+<text x="233" y="86" text-anchor="middle" class="lbl-sm">One meter, shared with everything else</text>
+
+<rect x="44" y="112" width="378" height="36" rx="4" fill="var(--surface-2)" stroke="var(--line-2)"/>
+<rect x="44" y="112" width="150" height="36" fill="var(--teal-soft)"/>
+<rect x="194" y="112" width="112" height="36" fill="var(--gold-soft)"/>
+<rect x="306" y="112" width="74" height="36" fill="var(--accent-soft)"/>
+<line x1="194" y1="112" x2="194" y2="148" stroke="var(--line-2)"/>
+<line x1="306" y1="112" x2="306" y2="148" stroke="var(--line-2)"/>
+<line x1="380" y1="112" x2="380" y2="148" stroke="var(--line-2)"/>
+<line x1="422" y1="102" x2="422" y2="158" stroke="var(--red)" stroke-width="2" stroke-dasharray="4 3"/>
+<text x="422" y="96" text-anchor="middle" class="cap" fill="var(--red)">THROTTLE</text>
+
+<text x="119" y="170" text-anchor="middle" class="lbl-sm">refreshes</text>
+<text x="250" y="170" text-anchor="middle" class="lbl-sm">queries</text>
+<text x="343" y="170" text-anchor="middle" class="lbl-sm">Copilot</text>
+
+<text x="233" y="208" text-anchor="middle" font-size="13">100 CU seconds per 1,000 input tokens</text>
+<text x="233" y="230" text-anchor="middle" font-size="13">400 CU seconds per 1,000 output tokens</text>
+<text x="233" y="258" text-anchor="middle" class="lbl-sm">F2 = 48 CU-hours a day, so roughly 432 requests</text>
+<text x="233" y="276" text-anchor="middle" class="lbl-sm">at Microsoft&rsquo;s example size, if nothing else runs</text>
+
+<rect x="470" y="34" width="434" height="256" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="687" y="64" text-anchor="middle" font-size="16" font-weight="650" fill="var(--accent)">Your Anthropic plan</text>
+<text x="687" y="86" text-anchor="middle" class="lbl-sm">A different meter, in a different budget</text>
+
+<rect x="498" y="112" width="378" height="36" rx="4" fill="var(--surface-2)" stroke="var(--line-2)"/>
+<rect x="498" y="112" width="176" height="36" fill="var(--accent-soft)"/>
+<rect x="674" y="112" width="96" height="36" fill="var(--violet-soft)"/>
+<line x1="674" y1="112" x2="674" y2="148" stroke="var(--line-2)"/>
+<line x1="770" y1="112" x2="770" y2="148" stroke="var(--line-2)"/>
+
+<text x="586" y="170" text-anchor="middle" class="lbl-sm">Claude Code</text>
+<text x="722" y="170" text-anchor="middle" class="lbl-sm">chats</text>
+
+<text x="687" y="208" text-anchor="middle" font-size="13">One allowance shared across the surfaces</text>
+<text x="687" y="230" text-anchor="middle" font-size="13">Overflow bills at API rates, not to Fabric</text>
+<text x="687" y="258" text-anchor="middle" class="lbl-sm">Nothing on this meter can throttle a refresh,</text>
+<text x="687" y="276" text-anchor="middle" class="lbl-sm">and no refresh can slow the agent down</text>
+</svg>
+</div>
+<figcaption><b>Two meters, and only one of them can stop your pipelines.</b> The bar
+segments are illustrative proportions, not measured usage — the point is the shape, which
+is that Copilot competes for the same capacity units as your refreshes while an outside
+agent competes for nothing you own. Rates and the F64 figure are Microsoft&rsquo;s; the F2
+figure is the same arithmetic scaled down.</figcaption>
+</figure>
+
+<div class="verdict"><b>Verdict on this axis:</b> Copilot&rsquo;s cost is invisible until
+it is a throttling incident, and it lands on the budget of the platform team. Claude
+Code&rsquo;s cost is visible, lands on a different budget, and cannot take a refresh down
+with it.</div>
+
+<h2 id="proscons"><span class="num">04</span>Pros and cons, plainly</h2>
+
+<p>Same running order in both panels — what it is good at, then what it is bad at — so the
+lists compare row against row.</p>
+
+<div class="pc">
+<div class="cop">
+<h4>Copilot in Fabric</h4>
+<p class="who">In-product · billed to capacity</p>
+<span class="g">Where it wins</span>
+<ul>
+<li><b>Rows never leave.</b> Processing stays in your capacity&rsquo;s geographic region
+unless an admin explicitly allows otherwise, and nothing is used to train models.</li>
+<li><b>The conversation is auditable.</b> Prompts and responses land in Microsoft&rsquo;s
+audit surface. No outside agent offers this.</li>
+<li><b>Permissions come for free.</b> It sees exactly what the signed-in user sees —
+row-level security, workspace roles and labels already apply.</li>
+<li><b>Nothing to install, nothing to approve.</b> No developer machine, no tokens on
+disk, no third-party server to review. An analyst can use it today.</li>
+<li><b>It knows the item it is sitting in.</b> Schema, measures, lineage and visuals are
+context it already has rather than context you have to feed it.</li>
+</ul>
+<span class="g b">Where it loses</span>
+<ul>
+<li><b>It cannot touch files.</b> No repository, no diff, no commit, no test run, no
+continuous integration.</li>
+<li><b>It works one item at a time.</b> &ldquo;Rename this measure across forty
+reports&rdquo; is not a shape it has.</li>
+<li><b>It spends your capacity.</b> Output tokens cost four times input tokens, and an
+exhausted capacity shuts down <em>all</em> operations, not just Copilot.</li>
+<li><b>It is on by default.</b> The main tenant setting ships enabled, so on a paid
+capacity the decision to adopt Copilot may already have been made for you.</li>
+<li><b>Quality caveats are Microsoft&rsquo;s own.</b> Responses &ldquo;can include
+inaccurate or low-quality content&rdquo;, and features &ldquo;work best in the English
+language.&rdquo;</li>
+</ul>
+</div>
+<div class="code">
+<h4>Claude Code</h4>
+<p class="who">Outside agent · billed to a plan allowance</p>
+<span class="g">Where it wins</span>
+<ul>
+<li><b>Files are its native material.</b> Point it at a git-integrated workspace and
+semantic models, reports, notebooks and pipelines become source it can refactor in
+bulk.</li>
+<li><b>The work is reviewable.</b> A diff, a commit, a pull request — the change survives
+the session and someone else can check it.</li>
+<li><b>It composes with everything else on the machine.</b> Tests, linters, the Fabric
+command-line tool, deployment pipelines, whatever your team already runs.</li>
+<li><b>It does not compete with your refreshes.</b> Reasoning bills to a different meter
+in a different budget.</li>
+<li><b>It can be gated.</b> Commands are visible text before they run, so a permission
+rule or a human can stand between the model and a destructive action.</li>
+</ul>
+<span class="g b">Where it loses</span>
+<ul>
+<li><b>Every row it reads leaves Fabric.</b> True on the command-line route and the MCP
+route alike. This is the cost of the whole approach.</li>
+<li><b>Fabric cannot see the conversation.</b> Your tenant logs the operations, never the
+prompt or the answer.</li>
+<li><b>It needs a developer.</b> A machine, a login, tokens, and someone who reads a diff.
+An analyst is not going to adopt this on a Tuesday.</li>
+<li><b>Identity is yours to get wrong.</b> A shared service principal is the convenient
+option and the worst one: every action arrives in the audit log as the principal, not the
+person.</li>
+<li><b>The MCP menu includes destructive tools.</b> Deleting workspaces and granting
+workspace roles are on it, and Microsoft notes such safeguards &ldquo;are not standardized
+in the MCP specification.&rdquo;</li>
+</ul>
+</div>
+</div>
+
+<div class="note teal">
+<span class="lbl">The symmetry worth noticing</span>
+<p>Each tool&rsquo;s biggest weakness is the other&rsquo;s headline strength, and neither
+weakness is a bug someone is going to fix. Copilot cannot edit files because it does not
+live where files are; Claude Code cannot keep rows inside Fabric because it does not live
+inside Fabric. That is why the answer to &ldquo;which one&rdquo; is usually
+&ldquo;both, split by task&rdquo; — and why the split has to be deliberate.</p>
+</div>
+
+<h2 id="head"><span class="num">05</span>Head to head</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>Copilot in Fabric</th><th>Claude Code</th></tr></thead>
+<tbody>
+<tr><td><b>Where it runs</b></td><td>Microsoft&rsquo;s environment, reached through the Fabric portal</td><td>Your machine, reaching Fabric over the command-line tool or an MCP server</td></tr>
+<tr><td><b>Prerequisite</b></td><td>Paid F2/P1 or higher. &ldquo;Copilot in Microsoft Fabric isn&rsquo;t supported on trial SKUs&rdquo;</td><td>A paid Claude plan. Nothing to enable on the Fabric side</td></tr>
+<tr><td><b>Turned on by</b></td><td>A tenant setting that is <b>enabled by default</b>, delegable to capacity admins and security groups</td><td>Whoever installs it. Fabric has no switch for this</td></tr>
+<tr><td><b>Authenticates as</b></td><td>Always the signed-in user</td><td>Whatever you configure: interactive user, service principal, certificate, or managed identity</td></tr>
+<tr class="hi"><td><b>Do rows leave Fabric?</b></td><td>No, unless an admin enables cross-region processing</td><td><b>Yes</b> — everything the agent reads is in the request</td></tr>
+<tr><td><b>Conversation retention</b></td><td>None for most experiences; notebooks and data agents keep history 28 days unless cleared</td><td>Saved sessions persist in-product until deleted; feedback carries five years</td></tr>
+<tr class="hi"><td><b>Prompt-level audit</b></td><td>Yes — Purview records Copilot interactions</td><td><b>No</b> — Fabric records the operations, never the prompt</td></tr>
+<tr><td><b>Cost meter</b></td><td>Fabric capacity units, shared with refreshes and queries</td><td>Anthropic plan allowance, separate budget</td></tr>
+<tr><td><b>Edits files</b></td><td>No</td><td>Yes — this is the whole point of it</td></tr>
+<tr><td><b>Works across many items</b></td><td>One item at a time, with a preview cross-item experience that is off by default</td><td>Yes, over a git-integrated workspace</td></tr>
+<tr><td><b>Leaves a reviewable artefact</b></td><td>The changed item, plus version history</td><td>A diff and a commit</td></tr>
+<tr><td><b>Worst-case action</b></td><td>Bounded by the item and the user&rsquo;s permissions</td><td>Bounded by the identity&rsquo;s permissions — and the tool menu includes deleting workspaces</td></tr>
+<tr><td><b>Who can use it</b></td><td>Anyone with the workspace</td><td>Someone comfortable in a terminal and a repository</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Two rows are highlighted because they are the only ones that cannot be traded away by
+configuration. Everything else on this table is a preference, a budget line, or a
+skills question.</p>
+
+<h2 id="when"><span class="num">06</span>When to use which</h2>
+
+<p>The tree below is ordered deliberately: <b>hardest constraint to unwind first</b>. A
+data-residency obligation is not negotiable, an audit requirement is negotiable only
+slowly, capacity headroom is negotiable with money, and convenience is negotiable
+immediately. Take the first branch that fires and stop.</p>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 920 620" role="img" aria-label="A decision tree with four questions asked in order of how hard the constraint is to unwind. If rows must stay inside the compliance boundary, use Copilot in Fabric. If prompts and answers must be auditable, use Copilot in Fabric. If the change spans many items or needs review and replay, use Claude Code. If the capacity is close to throttling, use Claude Code. Otherwise either tool works and Copilot is usually fewer keystrokes away.">
+<defs>
+<marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" fill="var(--line-2)"/>
+</marker>
+</defs>
+
+<text x="20" y="22" class="hd">ASK IN THIS ORDER — HARDEST CONSTRAINT TO UNWIND FIRST</text>
+
+<rect x="20" y="40" width="450" height="76" rx="8" fill="var(--surface-2)" stroke="var(--line-2)"/>
+<text x="245" y="72" text-anchor="middle" font-size="14" font-weight="600">Must the rows stay inside the compliance boundary?</text>
+<text x="245" y="96" text-anchor="middle" class="lbl-sm">Regulated data, or a sensitivity label you cannot argue with</text>
+<line x1="472" y1="78" x2="524" y2="78" stroke="var(--line-2)" stroke-width="1.5" marker-end="url(#ar2)"/>
+<text x="498" y="70" text-anchor="middle" class="cap">YES</text>
+<line x1="245" y1="116" x2="245" y2="152" stroke="var(--line-2)" stroke-width="1.5" marker-end="url(#ar2)"/>
+<text x="268" y="138" class="cap">NO</text>
+<rect x="530" y="40" width="374" height="76" rx="8" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.5"/>
+<text x="717" y="70" text-anchor="middle" font-size="14" font-weight="650" fill="var(--teal)">Copilot in Fabric</text>
+<text x="717" y="94" text-anchor="middle" class="lbl-sm">The only option that never sends rows outside</text>
+
+<rect x="20" y="156" width="450" height="76" rx="8" fill="var(--surface-2)" stroke="var(--line-2)"/>
+<text x="245" y="188" text-anchor="middle" font-size="14" font-weight="600">Do the prompt and the answer need to be auditable?</text>
+<text x="245" y="212" text-anchor="middle" class="lbl-sm">Someone will ask what the AI was told and what it said</text>
+<line x1="472" y1="194" x2="524" y2="194" stroke="var(--line-2)" stroke-width="1.5" marker-end="url(#ar2)"/>
+<text x="498" y="186" text-anchor="middle" class="cap">YES</text>
+<line x1="245" y1="232" x2="245" y2="268" stroke="var(--line-2)" stroke-width="1.5" marker-end="url(#ar2)"/>
+<text x="268" y="254" class="cap">NO</text>
+<rect x="530" y="156" width="374" height="76" rx="8" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.5"/>
+<text x="717" y="186" text-anchor="middle" font-size="14" font-weight="650" fill="var(--teal)">Copilot in Fabric</text>
+<text x="717" y="210" text-anchor="middle" class="lbl-sm">Fabric logs what an outside agent did, not what it was asked</text>
+
+<rect x="20" y="272" width="450" height="76" rx="8" fill="var(--surface-2)" stroke="var(--line-2)"/>
+<text x="245" y="304" text-anchor="middle" font-size="14" font-weight="600">Does it span many items, or need review and replay?</text>
+<text x="245" y="328" text-anchor="middle" class="lbl-sm">Bulk edits, a diff someone signs off, a deployment pipeline</text>
+<line x1="472" y1="310" x2="524" y2="310" stroke="var(--line-2)" stroke-width="1.5" marker-end="url(#ar2)"/>
+<text x="498" y="302" text-anchor="middle" class="cap">YES</text>
+<line x1="245" y1="348" x2="245" y2="384" stroke="var(--line-2)" stroke-width="1.5" marker-end="url(#ar2)"/>
+<text x="268" y="370" class="cap">NO</text>
+<rect x="530" y="272" width="374" height="76" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="717" y="302" text-anchor="middle" font-size="14" font-weight="650" fill="var(--accent)">Claude Code</text>
+<text x="717" y="326" text-anchor="middle" class="lbl-sm">Over the git-integrated workspace: files, commits, tests</text>
+
+<rect x="20" y="388" width="450" height="76" rx="8" fill="var(--surface-2)" stroke="var(--line-2)"/>
+<text x="245" y="420" text-anchor="middle" font-size="14" font-weight="600">Is the capacity already close to throttling?</text>
+<text x="245" y="444" text-anchor="middle" class="lbl-sm">A small F SKU, a peak refresh window, month-end</text>
+<line x1="472" y1="426" x2="524" y2="426" stroke="var(--line-2)" stroke-width="1.5" marker-end="url(#ar2)"/>
+<text x="498" y="418" text-anchor="middle" class="cap">YES</text>
+<line x1="245" y1="464" x2="245" y2="500" stroke="var(--line-2)" stroke-width="1.5" marker-end="url(#ar2)"/>
+<text x="268" y="486" class="cap">NO</text>
+<rect x="530" y="388" width="374" height="76" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="717" y="418" text-anchor="middle" font-size="14" font-weight="650" fill="var(--accent)">Claude Code</text>
+<text x="717" y="442" text-anchor="middle" class="lbl-sm">Its reasoning bills to a plan allowance, not to CU seconds</text>
+
+<rect x="20" y="504" width="884" height="76" rx="8" fill="var(--surface)" stroke="var(--line-2)" stroke-dasharray="6 4"/>
+<text x="462" y="536" text-anchor="middle" font-size="14" font-weight="650">Either. Take the one that is fewer keystrokes away.</text>
+<text x="462" y="560" text-anchor="middle" class="lbl-sm">For one edit, to one item, by one person, that is almost always Copilot in Fabric.</text>
+
+<text x="20" y="606" class="cap">TAKE THE FIRST BRANCH THAT FIRES AND STOP</text>
+</svg>
+</div>
+<figcaption><b>Order is the content here.</b> The questions are not interchangeable: the
+first two describe obligations you cannot configure your way out of, the third describes
+the shape of the work, and the fourth is a budget. Re-ordering them produces a tree that
+gives comfortable answers and wrong ones.</figcaption>
+</figure>
+
+<h3>Worked examples</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Task</th><th>Route</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>&ldquo;Explain what this measure is doing and why it double-counts&rdquo;</td><td>Copilot in Fabric</td><td>One item, one person, no artefact to keep. Fewer keystrokes.</td></tr>
+<tr><td>&ldquo;Rename <code>Sales Amt</code> to <code>Sales Amount</code> everywhere and fix the reports&rdquo;</td><td>Claude Code</td><td>Spans items, needs a diff and a rollback path.</td></tr>
+<tr><td>&ldquo;Draft a first-pass report page over this model&rdquo;</td><td>Copilot in Fabric</td><td>It already has the schema and can place the visuals in place.</td></tr>
+<tr><td>&ldquo;Add row-level security to nine models, consistently&rdquo;</td><td>Claude Code</td><td>Consistency is a file-level property, and someone must review it.</td></tr>
+<tr><td>&ldquo;Why did last night&rsquo;s pipeline fail?&rdquo;</td><td>Either</td><td>Copilot if you are already in the portal; Claude Code if the answer becomes a fix.</td></tr>
+<tr><td>&ldquo;Summarise these customer complaint rows&rdquo;</td><td>Copilot in Fabric</td><td>The rows are the sensitive part, and this is the branch where they must not leave.</td></tr>
+<tr><td>&ldquo;Stand up the same medallion layout in three workspaces&rdquo;</td><td>Claude Code</td><td>Repeatable, scripted, reviewable. Copilot has no shape for &ldquo;do it three times identically.&rdquo;</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="both"><span class="num">07</span>Using both: the seam between them</h2>
+
+<p>If the answer is &ldquo;both&rdquo;, the interesting engineering is not in either tool.
+It is in the joint.</p>
+
+<h3>The joint is Fabric git integration</h3>
+
+<p>Claude Code is only useful on Fabric because Fabric will hand you your items as source
+— model definitions, report definitions, notebook code, pipeline definitions — in a
+repository. That is the surface it is good at. Copilot works on the deployed item in the
+portal. Both are legitimate, and they write to different copies of the same thing.</p>
+
+<div class="note warn">
+<span class="lbl">The operational trap</span>
+<p>A portal edit and a repository edit are two uncommitted changes to one item, and
+whoever syncs second overwrites or conflicts. This is not an AI problem — it is the
+ordinary two-writer problem — but agents make it likely rather than rare, because both
+tools now produce edits faster than anyone reconciles them.</p>
+<p><b>Decide per workspace which side is authoritative</b>, and make the other side
+read-only in practice. A development workspace where the repository wins and Copilot is
+used for exploration only is a coherent rule. &ldquo;Whichever is convenient&rdquo; is
+not.</p>
+</div>
+
+<h3>The other seam: a data agent as a governed door</h3>
+
+<p>A Fabric data agent can be published for consumption from outside — Microsoft names
+Foundry, Copilot Studio, Microsoft 365 Copilot, &ldquo;or as an MCP server.&rdquo; That is
+genuinely useful: retrieval stays inside Fabric, grounded on the items you chose, under the
+user&rsquo;s own permissions, instead of an outside agent free-associating over your
+catalogue.</p>
+
+<p>It does not repair the boundary, and Microsoft says so on the same page: when users
+connect to those non-Fabric services, &ldquo;responses returned by Fabric data agents may
+be sent outside of Fabric&rsquo;s compliance boundary or geographic region, and processed
+and/or stored according to the non-Fabric service(s) applicable terms and data handling
+policies.&rdquo;</p>
+
+<div class="verdict">A data agent narrows <b>what</b> leaves and keeps the retrieval
+governed. It does not change <b>that</b> something leaves.</div>
+
+<h3>Hygiene that applies whichever way you go</h3>
+
+<ul>
+<li><b>Interactive, per-user login for interactive work.</b> A shared service principal in
+an agent&rsquo;s environment throws away per-user governance: every action arrives in the
+audit log as the principal, and Fabric can no longer tell your engineers apart. Reserve
+service principals for genuinely unattended automation, with their own least-privilege
+workspace role.</li>
+<li><b>Do not point an outside agent at production data.</b> This reduces exposure more
+than any other control on this page, and it outranks the rest of the list.</li>
+<li><b>Ask for aggregates and narrow projections, not <code>SELECT *</code>.</b> Less comes
+back, so less is transmitted and retained. Ask for the shape of the answer rather than the
+rows.</li>
+<li><b>Audit the servers you install.</b> The first-party Fabric MCP servers are
+Microsoft&rsquo;s; a community server is third-party code you are handing a token to.</li>
+<li><b>Review the Copilot tenant settings rather than inheriting them.</b> The main one
+ships enabled; the subprocessor and cross-region ones ship disabled. Know which state
+yours are in and who changed them.</li>
+<li><b>Watch the Copilot line in the capacity metrics app</b> before rolling anything out
+broadly. Microsoft&rsquo;s own advice is to pilot small and extrapolate.</li>
+</ul>
+
+<h2 id="wrong"><span class="num">08</span>Where this could be wrong</h2>
+
+<p>The strongest objection to this page is to its own first branch, and it is worth making
+properly rather than gesturing at.</p>
+
+<div class="note violet">
+<span class="lbl">The counter-argument</span>
+<p>I have made data residency the first question, which means it fires for almost anything
+touching real data — and on a data platform, almost everything touches real data. Applied
+literally, the tree routes nearly all work to the tool that cannot do most of the work,
+and a team that follows it ends up hand-editing forty reports because a rule said so.</p>
+<p><b>The escape, and it has to be deliberate:</b> the branch fires on <em>rows</em>, not
+on structure. Column names, model definitions, measure expressions and aggregates are not
+the regulated payload. An agent that reads a model definition and never runs a query has
+not moved a customer record. That distinction is what makes &ldquo;both&rdquo; workable —
+and if your team cannot hold it in practice, then the first branch really does swallow
+everything, and you should say so out loud rather than discover it later.</p>
+</div>
+
+<p>Four more places this could be wrong:</p>
+
+<ul>
+<li><b>The prompt-audit claim is documented, not observed.</b> Microsoft documents that
+auditing for Copilot and AI applications generates records, and that posture management for
+AI captures prompts and responses across Fabric Copilot experiences. I have not watched a
+real audit record for a Fabric Copilot session in a real tenant. Documented capability and
+what your tenant actually emits are different things — verify before you promise it to a
+risk committee.</li>
+<li><b>The F2 number is my arithmetic.</b> Microsoft publishes the F64 example. I scaled it
+linearly to F2. Smoothing and bursting behaviour at the small end may not be linear, and
+the example request size is Microsoft&rsquo;s, not yours — a long conversation over a wide
+schema is much larger than 2,000 input tokens.</li>
+<li><b>Rates move.</b> Microsoft states plainly that consumption rates &ldquo;are subject
+to change at any time&rdquo;, with notice by email or in-product. Any capacity plan built
+on the numbers above needs re-checking, not re-quoting.</li>
+<li><b>Much of both sides is in preview.</b> Several Copilot workload experiences carry
+preview terms, the standalone cross-item Copilot is preview, and the remote Fabric Core MCP
+server is preview with &ldquo;features and configuration may change.&rdquo; A preview
+statement is a weaker commitment than a general-availability one.</li>
+</ul>
+
+<div class="note">
+<span class="lbl">Shelf life</span>
+<p>Verified <b>2026-09-02</b>. The volatile parts are the consumption rates, the tenant
+setting names and defaults — the subprocessor settings are recent additions — and preview
+status on both sides. The stable part is the shape: an in-product agent that cannot leave
+and an outside agent that cannot stay. Re-check the numbers; the shape will outlast
+them.</p>
+</div>
+
+<h2 id="sources"><span class="num">09</span>Sources</h2>
+
+<p>First-party only. Microsoft Learn pages were read on 2026-09-02; the Anthropic-side
+facts are carried over from the companion page, verified the same day.</p>
+
+<div class="deeper">
+<div class="t">Microsoft, on Copilot in Fabric</div>
+<ul>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/fabric/fundamentals/copilot-privacy-security">Privacy, security, and responsible AI use of Copilot in Fabric</a> — training, residency, per-user permissions, abuse-monitoring retention</li>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/fabric/fundamentals/copilot-fabric-consumption">Copilot consumption, usage, and billing in Fabric</a> — the CU rates, the worked example, the F64 figure, cross-region processing</li>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/fabric/admin/service-admin-portal-copilot">Copilot and Agent admin settings</a> — every tenant setting, its default, and the data-agent boundary warning</li>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/fabric/fundamentals/copilot-enable-fabric">Enable and configure Copilot in Microsoft Fabric</a> — the F2/P1 requirement and the regional defaults</li>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/purview/ai-copilot-fabric">Use Microsoft Purview to manage data security and compliance for Copilot in Fabric</a></li>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/purview/audit-copilot">Audit logs for Copilot and AI applications</a></li>
+</ul>
+</div>
+
+<div class="deeper">
+<div class="t">Microsoft, on the agent-facing surfaces</div>
+<ul>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/rest/api/fabric/articles/mcp-servers/core-remote/get-started-core">Get started with the Fabric Core MCP server</a> — preview status, the tool menu, the compliance-boundary warning</li>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/rest/api/fabric/articles/mcp-servers/pro-dev-local/get-started-local">Get started with the local Fabric MCP server</a> — the Visual Studio Code and GitHub Copilot agent-mode path</li>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/fabric/data-engineering/set-up-fabric-vs-code-extension">Microsoft Fabric Visual Studio Code extensions</a></li>
+<li><span class="src">Learn</span> <a href="https://learn.microsoft.com/en-us/fabric/data-science/concept-data-agent">Fabric data agent concept</a> — what a data agent grounds on, and how it is consumed</li>
+</ul>
+</div>
+
+<div class="deeper">
+<div class="t">The companion page</div>
+<ul>
+<li><span class="src">This site</span> <a href="https://data-blueprint-lab.github.io/claude-surfaces/">Code, Cowork, and Fabric</a> — the Claude-side numbers this page leans on: what reaches Anthropic, retention, the MCP-versus-command-line comparison, and the identity trap in full</li>
+</ul>
+</div>
+
+<footer>
+<p><b>What this page is.</b> A comparison written to be argued with, not a recommendation
+to adopt anything. Every Microsoft claim above is quoted or paraphrased from a page linked
+in section 09; the arithmetic that is mine is labelled as mine. Where a claim is a
+judgement rather than a source, it is written as one.</p>
+<p><b>Verified 2026-09-02.</b> Consumption rates, tenant setting names and preview status
+all change. Re-read section 08 before quoting anything here in a decision
+document.</p>
+</footer>
+
+</div>
