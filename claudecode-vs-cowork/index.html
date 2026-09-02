@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Two Doors, One Meter</title>
-<meta name="description" content="The costed half of the Claude Code versus Claude Cowork comparison: one shared allowance, a twelve-person seat mix, blast radius, and the head-to-head table.">
+<title>Claude Code vs Claude Cowork</title>
+<meta name="description" content="The costed half of the Claude Code versus Claude Cowork comparison: one shared allowance, a twelve-person seat mix, what can go wrong, and the side-by-side table.">
 <meta name="color-scheme" content="light dark">
 </head>
 <body>
@@ -179,11 +179,11 @@ footer b{color:var(--ink-2)}
 <header>
 <div class="inner">
 <p class="eyebrow">Agentic tooling · cost, scope, blast radius</p>
-<h1>Two Doors, One Meter</h1>
-<p class="standfirst">Claude Code and Claude Cowork are not two purchases and not two
-prices — they are two doors onto the same engine, drawing from one meter. This is the
-first half of that argument: what each door is, what the seat behind it costs, and how
-far each one can reach once someone walks through.</p>
+<h1>Claude Code vs Claude Cowork</h1>
+<p class="standfirst">Both tools come free with the same paid seat, and both spend the
+same usage allowance. So "which is cheaper" has no answer. What is left is the question
+that matters: what each one can reach, what it costs to give people enough headroom, and
+who checks the work before it lands.</p>
 <div class="meta">
 <span><b>Written</b> 2026-09-02</span>
 <span><b>Statuses</b> verified 2026-09-02 — re-check</span>
@@ -196,13 +196,13 @@ far each one can reach once someone walks through.</p>
 <div class="wrap">
 
 <div class="toc">
-<div class="t">On this page — read in order; each section assumes the one before</div>
+<div class="t">On this page — read in order</div>
 <ol>
-<li><a href="#s1">Same engine, two doors</a></li>
-<li><a href="#s2">One pool, not two bills</a></li>
-<li><a href="#s3">Worked scenario: twelve people</a></li>
-<li><a href="#s4">Blast radius</a></li>
-<li><a href="#s5">Head to head</a></li>
+<li><a href="#s1">What each tool is</a></li>
+<li><a href="#s2">What it costs</a></li>
+<li><a href="#s3">Example: a team of twelve</a></li>
+<li><a href="#s4">What can go wrong</a></li>
+<li><a href="#s5">Side by side</a></li>
 </ol>
 </div>
 
@@ -215,7 +215,7 @@ traces to a dated first-party source; statuses move fast, so re-check before rel
 one.</p>
 </div>
 
-<h2 id="s1"><span class="num">01</span>Same engine, two doors</h2>
+<h2 id="s1"><span class="num">01</span>What each tool is</h2>
 
 <p>Cowork was built out of Claude Code. It runs the same kind of agent loop — read
 something, decide, act, check the result, go again — but points it at ordinary business
@@ -315,13 +315,13 @@ Claude Cowork" for both seat types. Both claims were true earlier in 2026, which
 they are still repeated.</p>
 </div>
 
-<h2 id="s2"><span class="num">02</span>One pool, not two bills</h2>
+<h2 id="s2"><span class="num">02</span>What it costs</h2>
 
 <p>Because both tools come free with a seat, the entire cost conversation is about seats
 and about one shared allowance. There is no line item called "Cowork" and there never will
 be.</p>
 
-<h3>Team seat list prices</h3>
+<h3>Seat prices</h3>
 
 <div class="tw">
 <table>
@@ -402,7 +402,7 @@ allowance, not features. The consequence in the bottom line is the part worth ta
 budget conversation.</figcaption>
 </figure>
 
-<h3>Where the variable cost really is</h3>
+<h3>What actually changes the bill</h3>
 
 <p>Two levers, and neither of them is the choice between Code and Cowork:</p>
 
@@ -422,7 +422,7 @@ a runaway agent shows up as money.</li>
 </ul>
 </div>
 
-<h2 id="s3"><span class="num">03</span>Worked scenario: twelve people on Fabric</h2>
+<h2 id="s3"><span class="num">03</span>Example: a team of twelve on Fabric</h2>
 
 <p>An invented organisation. One platform team of twelve running a Microsoft Fabric
 analytics estate — ingestion pipelines, a lakehouse, semantic models, and reporting for
@@ -436,7 +436,7 @@ inventing one would make the whole section worthless. Use it to reason about the
 the bill, not to forecast it.</p>
 </div>
 
-<h3>The team, and what each role actually needs</h3>
+<h3>Who needs what</h3>
 
 <div class="tw">
 <table>
@@ -454,7 +454,7 @@ the bill, not to forecast it.</p>
 <p>That falls out as <strong>4 Premium and 8 Standard</strong>: all-day agentic coding gets
 a Premium seat, everyone else starts Standard and moves up only on evidence.</p>
 
-<h3>Three mixes, costed</h3>
+<h3>Three options, priced</h3>
 
 <div class="tw">
 <table>
@@ -483,7 +483,7 @@ limit, watch one cycle, then decide.</li>
 </ul>
 
 <div class="impl">
-<div class="hd">For the implementer — the upgrade trigger</div>
+<div class="hd">When to move someone up a seat</div>
 <p>Move someone Standard → Premium when they repeatedly exhaust the <em>weekly</em> limit
 on work that matters, not when they hit a five-hour session limit once. Weekly limits reset
 at a fixed time assigned to the account, so the signal is clean and easy to observe. At $80
@@ -491,7 +491,7 @@ a month extra per person, one upgrade is cheap; twelve speculative upgrades are 
 year of headroom nobody asked for.</p>
 </div>
 
-<h2 id="s4"><span class="num">04</span>Blast radius</h2>
+<h2 id="s4"><span class="num">04</span>What can go wrong</h2>
 
 <p>Both tools are agents doing real work, so "what happens on a bad day" is the honest
 question. The two bad days look nothing alike — and the one that sounds smaller is the one
@@ -586,7 +586,7 @@ the person standing in it.</figcaption>
 </figure>
 
 
-<h2 id="s5"><span class="num">05</span>Head to head</h2>
+<h2 id="s5"><span class="num">05</span>Side by side</h2>
 
 <p>Every row is sourced first-party. This is the comparison table — but read it for the
 pattern rather than row by row, because the pattern is the finding.</p>
@@ -641,7 +641,7 @@ not gated behind a Premium seat — both were true earlier in 2026 and are not n
 The real gaps are narrower, and are the three dashed paths in section 04.</p>
 
 <p><b>Scope of this page.</b> This is an excerpt of a longer comparison — sections 01–04
-and the head-to-head table, renumbered to run 01–05 here. What leaves for the vendor and how
+and the side-by-side table, renumbered to run 01–05 here. What leaves for the vendor and how
 long it is kept, the two risk registers, the MCP-versus-CLI routes into Fabric, and the
 recommendation are in the full version,
 <a href="https://priya-bi.github.io/claude-surfaces/">Code, Cowork, and Fabric</a>.</p>

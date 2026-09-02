@@ -42,7 +42,7 @@ PAGES = [
         Path("claudecode-vs-cowork.html"),
         Path("claudecode-vs-cowork/index.html"),
         "The costed half of the Claude Code versus Claude Cowork comparison: one shared "
-        "allowance, a twelve-person seat mix, blast radius, and the head-to-head table.",
+        "allowance, a twelve-person seat mix, what can go wrong, and the side-by-side table.",
     ),
     (
         Path("claude-code-vs-copilot.html"),
