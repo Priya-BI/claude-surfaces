@@ -2,6 +2,9 @@
 
 **Read it here → https://data-blueprint-lab.github.io/claude-surfaces/**
 
+**Short version, five sections →** https://data-blueprint-lab.github.io/claude-surfaces/claudecode-vs-cowork/ — the costed half only: one shared allowance, a twelve-person seat mix, blast radius,
+and the head-to-head table. Same source facts, no risk registers or Fabric routes.
+
 A comparison of Anthropic's two agentic surfaces — **Claude Code** and **Claude
 Cowork** — on cost, security and governance, plus the two ways an agent reaches
 **Microsoft Fabric** from a developer machine (an MCP server, or the `fab` CLI).
@@ -65,23 +68,26 @@ reintroduces one fails the check rather than shipping.
 
 | File | What it's for |
 |---|---|
-| `claude-code-vs-cowork.html` | **Source of the page.** Authored in claude.ai Artifact page form, so it deliberately has no `<!doctype>`/`<html>`/`<head>`/`<body>` — the publisher supplies those. |
-| `index.html` | **Generated.** What GitHub Pages serves: the source wrapped in a real HTML document. Produced by `build_page.py`; don't hand-edit. |
+| `claude-code-vs-cowork.html` | **Source of the full page.** Authored in claude.ai Artifact page form, so it deliberately has no `<!doctype>`/`<html>`/`<head>`/`<body>` — the publisher supplies those. |
+| `claudecode-vs-cowork.html` | **Source of the excerpt** — sections 01–04 plus the head-to-head table, renumbered 01–05 and given its own front matter. Same Artifact page form. |
+| `index.html` | **Generated.** What GitHub Pages serves at the site root: the full source wrapped in a real HTML document. Produced by `build_page.py`; don't hand-edit. |
+| `claudecode-vs-cowork/index.html` | **Generated.** The excerpt, served at `/claudecode-vs-cowork/`. Same generator; don't hand-edit. |
 | `claude-code-vs-cowork.md` | The same argument in prose, readable on GitHub. |
 | `claude-surfaces-research.md` | **The facts basis.** Numbered, dated sources — `[1P]` first-party, `[3P]` third-party, `UNVERIFIED` where a claim rests on third-party sources only. Start here if you want to check a number. |
-| `check_page.py` | Static checks for the source page. |
-| `build_page.py` | Generates `index.html` from the source. |
+| `check_page.py` | Static checks for a source page. Run it against each source. |
+| `build_page.py` | Generates both served documents from the sources. Pages are listed in `PAGES`. |
 
 ## Editing it
 
 ```sh
-# 1. edit the source (never index.html)
-$EDITOR claude-code-vs-cowork.html
+# 1. edit a source (never a generated index.html)
+$EDITOR claude-code-vs-cowork.html      # or claudecode-vs-cowork.html
 
 # 2. gate it — must exit 0
 python3 check_page.py claude-code-vs-cowork.html
+python3 check_page.py claudecode-vs-cowork.html
 
-# 3. regenerate what Pages serves
+# 3. regenerate both documents Pages serves
 python3 build_page.py
 
 # 4. then LOOK at it. Static checks do not prove a page renders correctly.
