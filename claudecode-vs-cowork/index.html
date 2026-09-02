@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Claude Code vs Claude Cowork</title>
-<meta name="description" content="The costed half of the Claude Code versus Claude Cowork comparison: one shared allowance, a twelve-person seat mix, and what can go wrong.">
+<meta name="description" content="The costed half of the Claude Code versus Claude Cowork comparison: one shared allowance, a twelve-person seat mix, what can go wrong, and a short who-gets-what recommendation.">
 <meta name="color-scheme" content="light dark">
 </head>
 <body>
@@ -202,6 +202,7 @@ who checks the work before it lands.</p>
 <li><a href="#s2">What it costs</a></li>
 <li><a href="#s3">Example: a team of twelve</a></li>
 <li><a href="#s4">What can go wrong</a></li>
+<li><a href="#s5">Who gets what</a></li>
 </ol>
 </div>
 
@@ -584,6 +585,44 @@ the three dashed paths on the right have no control to turn on. A gap is only as
 the person standing in it.</figcaption>
 </figure>
 
+<h2 id="s5"><span class="num">05</span>Who gets what</h2>
+
+<p>Judgement, not vendor documentation. The four sections above are the evidence; this is
+what I would do with it. It is a staffing call — the tools are the same purchase, so the
+only real decision is who is handed which one, and on what condition.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Who</th><th>Gets</th><th>Seat</th><th>The condition attached</th></tr></thead>
+<tbody>
+<tr class="hi"><td><b>Data and analytics engineers</b></td><td>Claude Code</td><td>Premium if they live in it all day, Standard otherwise</td><td>Manual mode, sandboxed, with <code>curl</code> and <code>wget</code> denied</td></tr>
+<tr><td><b>BI developers</b></td><td>Both</td><td>Standard</td><td>Cowork only once cloud sessions are off</td></tr>
+<tr><td><b>Analysts</b></td><td>Cowork</td><td>Standard</td><td>Leave per-task write approval at its default</td></tr>
+<tr><td><b>Platform lead</b></td><td>Both</td><td>Premium</td><td>Owns the tenant-level switches, so nobody else has to</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The pattern behind the table: Claude Code goes to the people who already review each
+other's changes for a living, because that is where its larger reach meets an existing
+gate. Cowork goes to the people it actually transforms — but second, and only after the
+defaults have been looked at.</p>
+
+<div class="note warn">
+<span class="lbl">Two conditions that apply to everyone</span>
+<p><b>Turn off cloud sessions before you enable Cowork.</b> It is on by default on Team.
+Turning it back on should be a deliberate decision with a reason attached, not a setting
+nobody looked at.</p>
+<p><b>No production credentials in a shell the agent can see.</b> This is the only line
+here that reduces what can actually go wrong, rather than governing who may act or what you
+can prove afterwards.</p>
+</div>
+
+<p>The honest counter-argument — that this hands the better tool to the people who need
+help least, and asks the people it would transform to wait — is made properly in the
+<a href="https://priya-bi.github.io/claude-surfaces/">full version</a>, alongside the
+retention and audit detail this page leaves out.</p>
+
 <footer>
 <p><b>Facts basis.</b> Every price, quote and status on this page traces to a numbered,
 dated source in <code>claude-surfaces-research.md</code>, alongside this file. Prices are US
@@ -602,9 +641,10 @@ not gated behind a Premium seat — both were true earlier in 2026 and are not n
 The real gaps are narrower, and are the three dashed paths in section 04.</p>
 
 <p><b>Scope of this page.</b> This is an excerpt of a longer comparison — its first
-four sections, renumbered to run 01–04 here. The side-by-side table, what leaves for the
-vendor and how long it is kept, the two risk registers, the MCP-versus-CLI routes into
-Fabric, and the recommendation are in the full version,
+four sections, renumbered to run 01–04 here, plus a recommendation condensed from the
+full version's closing section. The side-by-side table, what leaves for the vendor and how
+long it is kept, the two risk registers, the MCP-versus-CLI routes into Fabric, and the
+case against the recommendation are in the full version,
 <a href="https://priya-bi.github.io/claude-surfaces/">Code, Cowork, and Fabric</a>.</p>
 
 <p><b>The organisation is invented.</b> No real organisation, person, workspace or object

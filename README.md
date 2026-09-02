@@ -2,8 +2,8 @@
 
 **Read it here → https://priya-bi.github.io/claude-surfaces/**
 
-**Short version, four sections →** https://priya-bi.github.io/claude-surfaces/claudecode-vs-cowork/ — the costed half only: one shared allowance, a twelve-person seat mix,
-and what can go wrong. Same source facts, no risk registers or Fabric routes.
+**Short version, five sections →** https://priya-bi.github.io/claude-surfaces/claudecode-vs-cowork/ — the costed half only: one shared allowance, a twelve-person seat mix,
+what can go wrong, and a short who-gets-what recommendation. Same source facts, no risk registers or Fabric routes.
 
 **Copilot instead of Claude? →** https://priya-bi.github.io/claude-surfaces/claudecode-vs-copilot/ — Copilot in
 Fabric against Claude Code: the compliance boundary, the capacity-unit meter, pros and cons,
@@ -74,7 +74,7 @@ reintroduces one fails the check rather than shipping.
 | File | What it's for |
 |---|---|
 | `claude-code-vs-cowork.html` | **Source of the full page.** Authored in claude.ai Artifact page form, so it deliberately has no `<!doctype>`/`<html>`/`<head>`/`<body>` — the publisher supplies those. |
-| `claudecode-vs-cowork.html` | **Source of the excerpt** — the first four sections, renumbered 01–04 and given its own front matter. Same Artifact page form. |
+| `claudecode-vs-cowork.html` | **Source of the excerpt** — the first four sections, renumbered 01–04, plus a condensed who-gets-what recommendation, with its own front matter. Same Artifact page form. |
 | `index.html` | **Generated.** What GitHub Pages serves at the site root: the full source wrapped in a real HTML document. Produced by `build_page.py`; don't hand-edit. |
 | `claudecode-vs-cowork/index.html` | **Generated.** The excerpt, served at `/claudecode-vs-cowork/`. Same generator; don't hand-edit. |
 | `claude-code-vs-cowork.md` | The same argument in prose, readable on GitHub. |
