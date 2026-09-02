@@ -29,6 +29,16 @@ user's own machine outside central retention with no admin export and no deletio
 endpoint yet, and sits behind network egress rules that explicitly do not apply to web
 fetch, web search, or MCP servers.
 
+**A second axis most comparisons skip — including the first version of this page:** what
+actually travels to the vendor, and how long it is kept. Neither tool differs, but the
+numbers are not the ones usually quoted. Thirty days is the *API backend* deletion window,
+not a cap on saved Team or Enterprise coding sessions, which are retained in-product until
+someone deletes them. Anything submitted as feedback — a thumbs-down, a bug report — carries
+**five years**, on a commercial plan too. And zero data retention is not a switch you can
+flip: it is not part of the standard Enterprise plan, cannot be enabled from admin settings,
+and is mutually exclusive with Anthropic's covered models, which on Azure Foundry means a
+separate Azure subscription.
+
 **On Fabric,** three first-party statements from two uncoordinated vendors point at the
 same soft spot: Anthropic says egress permissions don't apply to MCP servers; Microsoft
 says an MCP integration may "process data outside of Fabric's compliance boundaries" and
