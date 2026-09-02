@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code, Cowork, and Fabric</title>
+<meta name="description" content="A costed, first-party-sourced comparison of Claude Code and Claude Cowork on seats, security and auditability, plus MCP-vs-CLI routes into Microsoft Fabric.">
+<meta name="color-scheme" content="light dark">
+</head>
+<body>
+<style>
+/* ── Palette: warm editorial. Inherited from the repo's existing explainer pages
+   (docs/databricks/agent-platform/, leads/accuracy-cliff/) so this page reads as
+   part of the same set. Light on bare :root, dark redefined twice so an explicit
+   data-theme wins in both directions. Local font stacks only — zero egress. ── */
+:root{
+  --bg:#FBF8F3; --surface:#FFFFFF; --surface-2:#F4EFE7;
+  --ink:#1F1B16; --ink-2:#4A4239; --muted:#6B6259;
+  --line:#E3DACC; --line-2:#CFC3B0;
+  --accent:#B4531F; --accent-soft:#F6E7DC;
+  --teal:#1F5F5B; --teal-soft:#DFEDEB;
+  --gold:#8A6A12; --gold-soft:#F6EED8;
+  --red:#9B2C2C; --red-soft:#F7E4E4;
+  --violet:#5B3A8A; --violet-soft:#EBE3F5;
+  --shadow:0 1px 2px rgba(31,27,22,.06),0 8px 24px rgba(31,27,22,.05);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16130F; --surface:#201C17; --surface-2:#282219;
+    --ink:#F2EDE4; --ink-2:#D8D0C4; --muted:#A69C8F;
+    --line:#332C24; --line-2:#4A4034;
+    --accent:#E8834A; --accent-soft:#3A2418;
+    --teal:#5FB8B0; --teal-soft:#12302E;
+    --gold:#D6AE49; --gold-soft:#332A12;
+    --red:#E88080; --red-soft:#3A1E1E;
+    --violet:#B79BE0; --violet-soft:#251A38;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16130F; --surface:#201C17; --surface-2:#282219;
+  --ink:#F2EDE4; --ink-2:#D8D0C4; --muted:#A69C8F;
+  --line:#332C24; --line-2:#4A4034;
+  --accent:#E8834A; --accent-soft:#3A2418;
+  --teal:#5FB8B0; --teal-soft:#12302E;
+  --gold:#D6AE49; --gold-soft:#332A12;
+  --red:#E88080; --red-soft:#3A1E1E;
+  --violet:#B79BE0; --violet-soft:#251A38;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:16.5px;line-height:1.68;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:74rem;margin:0 auto;padding:0 1.5rem 6rem}
+
+header{border-bottom:1px solid var(--line);background:var(--surface-2);padding:3.5rem 1.5rem 2.75rem;margin-bottom:2.5rem}
+header .inner{max-width:74rem;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 .9rem}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,4.4vw,3.1rem);line-height:1.08;
+  letter-spacing:-.02em;margin:0 0 1rem;max-width:34ch;text-wrap:balance}
+.standfirst{font-size:1.14rem;color:var(--ink-2);max-width:62ch;margin:0 0 1.4rem}
+.meta{display:flex;flex-wrap:wrap;gap:.5rem 1.6rem;font-family:var(--mono);font-size:.76rem;
+  color:var(--muted);border-top:1px solid var(--line-2);padding-top:1.1rem;margin-top:1.5rem}
+.meta b{color:var(--ink-2);font-weight:500}
+
+h2{font-family:var(--serif);font-size:1.9rem;font-weight:600;letter-spacing:-.015em;
+  margin:3.8rem 0 .6rem;padding-top:1.7rem;border-top:1px solid var(--line);text-wrap:balance}
+h2 .num{font-family:var(--mono);font-size:.8rem;color:var(--accent);display:block;
+  letter-spacing:.1em;margin-bottom:.5rem;font-weight:400}
+h3{font-size:1.15rem;font-weight:650;margin:2.3rem 0 .55rem;letter-spacing:-.005em}
+p{margin:0 0 1rem;max-width:70ch}
+ul,ol{margin:0 0 1rem;padding-left:1.3rem;max-width:70ch}
+li{margin-bottom:.45rem}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+code{font-family:var(--mono);font-size:.855em;background:var(--surface-2);padding:.12em .38em;
+  border-radius:3px;border:1px solid var(--line);overflow-wrap:break-word}
+strong{font-weight:650}
+.lead{font-size:1.05rem;color:var(--ink-2);max-width:66ch}
+
+/* callouts */
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:.95rem 1.15rem;
+  border-radius:0 7px 7px 0;margin:0 0 1.4rem}
+.note.teal{border-left-color:var(--teal);background:var(--teal-soft)}
+.note.warn{border-left-color:var(--red);background:var(--red-soft)}
+.note.gold{border-left-color:var(--gold);background:var(--gold-soft)}
+.note.violet{border-left-color:var(--violet);background:var(--violet-soft)}
+.note p{margin:0;max-width:66ch}
+.note p+p{margin-top:.6rem}
+.note .lbl{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+  display:block;margin-bottom:.4rem;opacity:.85;font-weight:600}
+
+/* plain-language definition */
+.plain{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:.9rem 1.1rem;margin:0 0 1.3rem}
+.plain .t{font-family:var(--mono);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--teal);font-weight:650;display:block;margin-bottom:.35rem}
+.plain p{margin:0;font-size:1rem}
+
+/* "for the implementer" — skippable technical depth */
+.impl{border:1px dashed var(--line-2);border-left:3px solid var(--violet);border-radius:0 8px 8px 0;
+  padding:.85rem 1.1rem;margin:0 0 1.4rem;background:var(--surface)}
+.impl .hd{font-family:var(--mono);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--violet);font-weight:650;margin-bottom:.4rem}
+.impl .hd::before{content:"\2317  "}
+.impl p{margin:0;font-size:.94rem;color:var(--ink-2);max-width:68ch}
+.impl p+p{margin-top:.55rem}
+
+/* tables */
+.tw{overflow-x:auto;margin:0 0 1.5rem;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:34rem;font-size:.87rem}
+th,td{text-align:left;padding:.62rem .85rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-2);font-family:var(--mono);font-size:.7rem;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td code{font-size:.8rem}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.hi td{background:var(--teal-soft)}
+
+/* figures */
+figure{margin:1.9rem 0 2rem}
+.fig-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:1.4rem 1.2rem;overflow-x:auto;box-shadow:var(--shadow)}
+/* Default text colour is set HERE, on the container, so <text> inherits it. Do NOT
+   move it to a `svg text{fill:…}` rule: a CSS rule beats a presentation attribute,
+   so that would silently override every fill="var(--teal)" on an individual <text>. */
+.fig-box svg{display:block;width:100%;height:auto;min-width:40rem;fill:var(--ink)}
+figcaption{font-size:.83rem;color:var(--muted);margin-top:.7rem;max-width:70ch;padding-left:.1rem}
+figcaption b{color:var(--ink-2);font-weight:600}
+svg text{font-family:var(--sans)}
+svg .mono{font-family:var(--mono)}
+svg .lbl-sm{font-size:10px;fill:var(--muted)}
+svg .cap{font-size:9.5px;letter-spacing:.1em;fill:var(--muted);font-family:var(--mono)}
+svg .hd{font-size:9.5px;letter-spacing:.12em;fill:var(--muted);font-family:var(--mono)}
+
+/* pills */
+.pill{display:inline-block;font-family:var(--mono);font-size:.66rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:.16em .5em;border-radius:4px;white-space:nowrap;vertical-align:.08em}
+.ga{background:var(--teal-soft);color:var(--teal);border:1px solid var(--teal)}
+.pv{background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold)}
+.beta{background:var(--red-soft);color:var(--red);border:1px solid var(--red)}
+
+/* risk register rows */
+.rid{font-family:var(--mono);font-weight:650;color:var(--accent);white-space:nowrap}
+.nomit{font-family:var(--mono);font-size:.72rem;color:var(--red);font-weight:650}
+
+/* toc */
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1.1rem 1.3rem;margin:0 0 1rem}
+.toc .t{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem}
+.toc ol{columns:2;column-gap:2.4rem;margin:0;padding-left:1.2rem;font-size:.9rem;max-width:none}
+.toc li{margin-bottom:.28rem}
+@media(max-width:640px){.toc ol{columns:1}}
+
+/* go-deeper reading list */
+.deeper{border-left:3px solid var(--teal);background:var(--surface);border-radius:0 8px 8px 0;
+  padding:.85rem 1.1rem;margin:1.6rem 0 0}
+.deeper .t{font-family:var(--mono);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--teal);font-weight:650;margin-bottom:.5rem}
+.deeper ul{list-style:none;padding:0;margin:0;max-width:none}
+.deeper li{font-size:.87rem;margin-bottom:.4rem;color:var(--ink-2)}
+.deeper .src{font-family:var(--mono);font-size:.63rem;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--teal);color:var(--teal);border-radius:3px;padding:.1em .4em;margin-right:.45rem}
+
+footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.5rem;font-size:.83rem;color:var(--muted)}
+footer p{max-width:70ch}
+footer b{color:var(--ink-2)}
+@media(max-width:640px){
+  body{font-size:16px}
+  header{padding:2.5rem 1.15rem 2rem}
+  .wrap{padding:0 1.15rem 4rem}
+}
+</style>
+
+<header>
+<div class="inner">
+<p class="eyebrow">Agentic tooling · cost, security, governance</p>
+<h1>Code, Cowork, and Fabric</h1>
+<p class="standfirst">Claude Code and Claude Cowork are not two purchases and not two
+prices — they are two doors onto the same engine, drawing from one meter. What actually
+separates them is how much you can scope, and how much you can prove afterwards.</p>
+<div class="meta">
+<span><b>Written</b> 2026-09-02</span>
+<span><b>Statuses</b> verified 2026-09-02 — re-check</span>
+<span><b>Facts basis</b> claude-surfaces-research.md</span>
+<span><b>Scenario</b> 12-person Fabric platform team, invented</span>
+</div>
+</div>
+</header>
+
+<div class="wrap">
+
+<div class="toc">
+<div class="t">On this page — read in order; each section assumes the one before</div>
+<ol>
+<li><a href="#s0">The short answer</a></li>
+<li><a href="#s1">Same engine, two doors</a></li>
+<li><a href="#s2">One pool, not two bills</a></li>
+<li><a href="#s3">Worked scenario: twelve people</a></li>
+<li><a href="#s4">Blast radius</a></li>
+<li><a href="#s5">Head to head</a></li>
+<li><a href="#s6">Risk register — Claude Code</a></li>
+<li><a href="#s7">Risk register — Cowork</a></li>
+<li><a href="#s8">Reaching Fabric: two routes</a></li>
+<li><a href="#s9">A normal day</a></li>
+<li><a href="#s10">What I'd do — and the case against it</a></li>
+</ol>
+</div>
+
+<div class="note gold">
+<span class="lbl">How to read the status markers</span>
+<p><span class="pill ga">GA</span> generally available · <span class="pill pv">Preview</span>
+features and configuration may still change · <span class="pill beta">Beta</span> early.
+Roughly a quarter of the surface described here is preview or beta. Every price and quote
+traces to a dated first-party source; statuses move fast, so re-check before relying on
+one.</p>
+</div>
+
+<h2 id="s0"><span class="num">00</span>The short answer</h2>
+
+<p class="lead">Three things are true that most comparisons of these two tools get wrong.
+All three came out of checking claims that sounded obvious.</p>
+
+<p><strong>They are not two purchases.</strong> Claude Code is included in every paid
+plan. Cowork is included in every paid Team seat, Standard and Premium alike. Neither has
+a price of its own. So "which is cheaper" has no answer — the real question is what a
+<em>seat</em> costs, and how fast each tool burns the allowance that comes with it.</p>
+
+<p><strong>They share one allowance.</strong> In Anthropic's own words, "your work in the
+terminal and your chats draw from one pool." When someone runs out, usage credits let them
+keep going, billed at standard API rates — and those credits cover "Claude, Cowork, and
+Claude Code" alike. One tap, one meter, per person.</p>
+
+<p><strong>The difference that should decide it is governability</strong> — not price, and
+not even security in the usual sense. Here the answer is the opposite of what most people
+expect: <em>the developer tool is the more controllable one.</em> Claude Code starts
+read-only, does not auto-approve web fetches, can sandbox its own shell, and logs every
+operation in a cloud session "for compliance and audit purposes." Cowork on a Team plan is
+all-or-nothing across the entire organisation, runs cloud sessions on by default, keeps
+local session history on the employee's own laptop outside central retention with no admin
+export and no deletion endpoint yet, and sits behind network egress rules that explicitly
+do not apply to web fetch, web search, or Model Context Protocol (MCP) servers — the
+standard way an agent is handed a menu of tools to call.</p>
+
+<div class="note teal">
+<span class="lbl">The recommendation in four sentences</span>
+<p>Buy seats, not tools — four Premium and eight Standard for a twelve-person team, billed
+annually, is <strong>$6,720 a year</strong>. Give the engineers Claude Code in its manual,
+sandboxed mode. Turn Cowork's cloud sessions off on day one, then decide deliberately
+whether to turn them back on. And treat the MCP path into Fabric as the one route your
+existing egress and approval controls were never built to see.</p>
+</div>
+
+<h2 id="s1"><span class="num">01</span>Same engine, two doors</h2>
+
+<p>Cowork was built out of Claude Code. It runs the same kind of agent loop — read
+something, decide, act, check the result, go again — but points it at ordinary business
+files instead of a code repository, and takes away the terminal.</p>
+
+<div class="plain">
+<span class="t">In plain terms</span>
+<p>An <strong>agent</strong> here just means the model is allowed to take actions in a
+loop, rather than answer one question and stop. It reads, decides what to do, does it,
+looks at what happened, and goes again. The interesting question is never "how clever is
+it." It is <em>what is it allowed to touch, and who finds out.</em></p>
+</div>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 880 348" role="img" aria-label="One shared agent loop sits in the centre with two entry points: Claude Code through the terminal reaching a code repository, shell and cloud credentials, and Cowork through the desktop or web app reaching granted document folders and the signed-in browser identity. The engine is identical; only the reach differs.">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,1 L9,5 L0,9 z" fill="var(--muted)"/></marker></defs>
+
+  <text x="16" y="18" class="hd">WHAT IT REACHES</text>
+  <text x="366" y="18" class="hd">THE SAME ENGINE</text>
+  <text x="716" y="18" class="hd">WHAT IT REACHES</text>
+
+  <!-- shared engine, centre -->
+  <rect x="356" y="96" width="168" height="138" rx="9" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="440" y="120" text-anchor="middle" class="cap">AGENT LOOP</text>
+  <text x="440" y="144" text-anchor="middle" font-size="12">read</text>
+  <text x="440" y="164" text-anchor="middle" font-size="12">decide</text>
+  <text x="440" y="184" text-anchor="middle" font-size="12">act</text>
+  <text x="440" y="204" text-anchor="middle" font-size="12">check</text>
+  <text x="440" y="224" text-anchor="middle" class="lbl-sm">identical in both</text>
+
+  <!-- Claude Code door -->
+  <rect x="196" y="130" width="132" height="52" rx="6" fill="var(--surface)" stroke="var(--teal)"/>
+  <text x="262" y="152" text-anchor="middle" font-size="13" font-weight="650" fill="var(--teal)">Claude Code</text>
+  <text x="262" y="170" text-anchor="middle" class="lbl-sm">terminal · IDE · web</text>
+  <line x1="356" y1="156" x2="334" y2="156" stroke="var(--muted)" marker-end="url(#ar)"/>
+
+  <!-- Cowork door -->
+  <rect x="552" y="130" width="132" height="52" rx="6" fill="var(--surface)" stroke="var(--gold)"/>
+  <text x="618" y="152" text-anchor="middle" font-size="13" font-weight="650" fill="var(--gold)">Cowork</text>
+  <text x="618" y="170" text-anchor="middle" class="lbl-sm">desktop · web · mobile</text>
+  <line x1="524" y1="156" x2="546" y2="156" stroke="var(--muted)" marker-end="url(#ar)"/>
+
+  <!-- Code reach -->
+  <rect x="16" y="66" width="164" height="180" rx="8" fill="var(--teal-soft)" stroke="var(--teal)"/>
+  <text x="98" y="90" text-anchor="middle" class="cap">A DEVELOPER MACHINE</text>
+  <text x="98" y="116" text-anchor="middle" font-size="12">code repository</text>
+  <text x="98" y="140" text-anchor="middle" font-size="12">the shell</text>
+  <text x="98" y="164" text-anchor="middle" font-size="12">logged-in cloud CLIs</text>
+  <text x="98" y="188" text-anchor="middle" font-size="12">deployment pipelines</text>
+  <text x="98" y="220" text-anchor="middle" class="lbl-sm">reviewed by: a diff,</text>
+  <text x="98" y="235" text-anchor="middle" class="lbl-sm">read by another engineer</text>
+  <line x1="196" y1="156" x2="184" y2="156" stroke="var(--muted)" marker-end="url(#ar)"/>
+
+  <!-- Cowork reach -->
+  <rect x="700" y="66" width="164" height="180" rx="8" fill="var(--gold-soft)" stroke="var(--gold)"/>
+  <text x="782" y="90" text-anchor="middle" class="cap">A BUSINESS MACHINE</text>
+  <text x="782" y="116" text-anchor="middle" font-size="12">granted folders</text>
+  <text x="782" y="140" text-anchor="middle" font-size="12">the documents in them</text>
+  <text x="782" y="164" text-anchor="middle" font-size="12">signed-in browser identity</text>
+  <text x="782" y="188" text-anchor="middle" font-size="12">cloud session storage</text>
+  <text x="782" y="220" text-anchor="middle" class="lbl-sm">reviewed by: whoever</text>
+  <text x="782" y="235" text-anchor="middle" class="lbl-sm">clicked approve</text>
+  <line x1="684" y1="156" x2="696" y2="156" stroke="var(--muted)" marker-end="url(#ar)"/>
+
+  <text x="16" y="286" class="cap">THE CONSEQUENCE</text>
+  <text x="16" y="308" font-size="12.5" fill="var(--ink-2)">A control that exists on one door is not automatically present on the other.</text>
+  <text x="16" y="328" font-size="12.5" fill="var(--ink-2)">Most of this page is about where the two have drifted apart.</text>
+</svg>
+</div>
+<figcaption><b>The engine is shared; the reach and the review are not.</b> Claude Code
+reaches further in machine terms — a shell can touch anything its credentials can. Cowork
+reaches further in <em>business</em> terms: contracts, HR exports, finance workbooks. The
+review gate on the left is a professional habit; on the right it is a dialog box.</figcaption>
+</figure>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>Claude Code</th><th>Claude Cowork</th></tr></thead>
+<tbody>
+<tr><td><b>Where it runs</b></td><td>Terminal, IDE, and cloud sessions</td><td>Desktop app, web, iOS, Android — local or cloud sessions</td></tr>
+<tr><td><b>Who it's for</b></td><td>Developers and engineers</td><td>Anyone — no coding required</td></tr>
+<tr><td><b>What it points at</b></td><td>A code repository and your shell</td><td>Folders of documents you grant it</td></tr>
+<tr><td><b>Status</b></td><td><span class="pill ga">GA</span></td><td><span class="pill ga">GA</span> since 2026-04-09 — launched January 2026 as a preview</td></tr>
+<tr><td><b>Included in</b></td><td>All paid plans</td><td>All paid plans, both Team seat types</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+<span class="lbl">Two things you may have been told that are no longer true</span>
+<p>Cowork is <strong>not</strong> a research preview — it left preview on 2026-04-09 and
+is generally available on macOS, Windows, web and mobile. It is also <strong>not</strong>
+gated behind a Premium seat; the Team plan feature list reads "Includes Claude Code and
+Claude Cowork" for both seat types. Both claims were true earlier in 2026, which is why
+they are still repeated.</p>
+</div>
+
+<h2 id="s2"><span class="num">02</span>One pool, not two bills</h2>
+
+<p>Because both tools come free with a seat, the entire cost conversation is about seats
+and about one shared allowance. There is no line item called "Cowork" and there never will
+be.</p>
+
+<h3>Team seat list prices</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Seat</th><th class="num">Billed annually</th><th class="num">Billed monthly</th><th>Usage</th></tr></thead>
+<tbody>
+<tr><td><b>Standard</b></td><td class="num"><b>$20</b> /seat/mo</td><td class="num">$25 /seat/mo</td><td>1.25× a Pro session</td></tr>
+<tr><td><b>Premium</b></td><td class="num"><b>$100</b> /seat/mo</td><td class="num">$125 /seat/mo</td><td>6.25× a Pro session — 5× a Standard seat</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Team plans need a minimum of two members and stretch to 150 seats. Seat types can be
+mixed freely. Both include Claude Code and Cowork. Both carry a weekly limit on top of the
+rolling five-hour session window, resetting at a fixed time assigned to your account.</p>
+
+<div class="note gold">
+<span class="lbl">Read the prices with this caveat attached</span>
+<p>These are US list prices excluding tax. Anthropic states that "pricing, currency, and
+tax handling vary by region", and that prices are "subject to change at Anthropic's
+discretion." Outside the US, treat the figures below as the <em>shape</em> of the bill,
+not the invoice.</p>
+</div>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 880 380" role="img" aria-label="Each member has one weekly allowance that chat, Claude Code and Cowork all draw from. A Premium seat's allowance is five times a Standard seat's. When the allowance is empty, usage credits continue the work billed at standard API rates, which is the only genuinely usage-based cost in the model.">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,1 L9,5 L0,9 z" fill="var(--muted)"/></marker></defs>
+
+  <text x="16" y="18" class="hd">ONE ALLOWANCE PER MEMBER — SIZED BY SEAT TYPE</text>
+
+  <!-- Standard tank -->
+  <rect x="26" y="188" width="120" height="44" rx="5" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="86" y="208" text-anchor="middle" font-size="12" font-weight="650">Standard</text>
+  <text x="86" y="224" text-anchor="middle" class="lbl-sm">$20/mo · 1.25x Pro</text>
+
+  <!-- Premium tank, 5x taller to encode the ratio -->
+  <rect x="176" y="38" width="120" height="194" rx="5" fill="var(--teal-soft)" stroke="var(--teal)"/>
+  <text x="236" y="130" text-anchor="middle" font-size="12" font-weight="650" fill="var(--teal)">Premium</text>
+  <text x="236" y="148" text-anchor="middle" class="lbl-sm">$100/mo · 6.25x Pro</text>
+  <text x="236" y="222" text-anchor="middle" class="lbl-sm">5x the Standard seat</text>
+
+  <text x="26" y="252" class="cap">HEIGHT DRAWN TO SCALE</text>
+
+  <!-- three consumers draw from the same pool -->
+  <rect x="392" y="46" width="200" height="46" rx="6" fill="var(--surface)" stroke="var(--line-2)"/>
+  <text x="492" y="68" text-anchor="middle" font-size="12.5">Chat — web, desktop, mobile</text>
+  <text x="492" y="84" text-anchor="middle" class="lbl-sm">draws from the pool</text>
+
+  <rect x="392" y="112" width="200" height="46" rx="6" fill="var(--surface)" stroke="var(--teal)"/>
+  <text x="492" y="134" text-anchor="middle" font-size="12.5" fill="var(--teal)">Claude Code</text>
+  <text x="492" y="150" text-anchor="middle" class="lbl-sm">draws from the same pool</text>
+
+  <rect x="392" y="178" width="200" height="46" rx="6" fill="var(--surface)" stroke="var(--gold)"/>
+  <text x="492" y="200" text-anchor="middle" font-size="12.5" fill="var(--gold)">Cowork</text>
+  <text x="492" y="216" text-anchor="middle" class="lbl-sm">draws from the same pool</text>
+
+  <line x1="300" y1="70" x2="386" y2="70" stroke="var(--muted)" marker-end="url(#ar2)"/>
+  <line x1="300" y1="135" x2="386" y2="135" stroke="var(--muted)" marker-end="url(#ar2)"/>
+  <line x1="300" y1="200" x2="386" y2="200" stroke="var(--muted)" marker-end="url(#ar2)"/>
+
+  <!-- overflow -->
+  <rect x="664" y="112" width="200" height="66" rx="6" fill="var(--red-soft)" stroke="var(--red)"/>
+  <text x="764" y="134" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--red)">Usage credits</text>
+  <text x="764" y="152" text-anchor="middle" class="lbl-sm">billed at standard API rates</text>
+  <text x="764" y="168" text-anchor="middle" class="lbl-sm">the only usage-based cost</text>
+  <line x1="596" y1="145" x2="658" y2="145" stroke="var(--red)" marker-end="url(#ar2)"/>
+  <text x="600" y="138" class="cap" fill="var(--red)">WHEN EMPTY</text>
+
+  <text x="16" y="304" class="cap">THE TRAP</text>
+  <text x="16" y="326" font-size="12.5" fill="var(--ink-2)">A Cowork rollout adds no line item. It raises the rate at which existing seats hit their ceiling and start drawing credits —</text>
+  <text x="16" y="346" font-size="12.5" fill="var(--ink-2)">so the cost of deploying Cowork arrives on the invoice under a different name.</text>
+</svg>
+</div>
+<figcaption><b>One tap, one meter, three consumers.</b> The Premium block is drawn five
+times the height of the Standard block because that is the actual ratio — you are buying
+allowance, not features. The consequence in the bottom line is the part worth taking to a
+budget conversation.</figcaption>
+</figure>
+
+<h3>Where the variable cost really is</h3>
+
+<p>Two levers, and neither of them is the choice between Code and Cowork:</p>
+
+<ol>
+<li><strong>Seat mix.</strong> A Premium seat costs five times a Standard seat and gives
+five times the usage. A straight linear trade, so the only real question is which people
+genuinely hit the Standard ceiling.</li>
+<li><strong>Usage credits.</strong> The one genuinely usage-based cost, and the only place
+a runaway agent shows up as money.</li>
+</ol>
+
+<div class="deeper">
+<div class="t">Go deeper</div>
+<ul>
+<li><span class="src">First-party</span><a href="https://support.claude.com/en/articles/9266767-what-is-the-team-plan">What is the Team plan?</a> — the seat prices, the 2-seat minimum, the 150-seat ceiling, and the per-seat usage multipliers, all in one place.</li>
+<li><span class="src">First-party</span><a href="https://support.claude.com/en/articles/12005970-manage-usage-credits-for-team-and-seat-based-enterprise-plans">Manage usage credits</a> — confirms credits span "Claude, Cowork, and Claude Code" from one allowance.</li>
+</ul>
+</div>
+
+<h2 id="s3"><span class="num">03</span>Worked scenario: twelve people on Fabric</h2>
+
+<p>An invented organisation. One platform team of twelve running a Microsoft Fabric
+analytics estate — ingestion pipelines, a lakehouse, semantic models, and reporting for
+everyone else.</p>
+
+<div class="note warn">
+<span class="lbl">What these numbers are, and are not</span>
+<p>This is <strong>arithmetic on list prices under stated assumptions</strong>. It is not
+measured consumption, and no usage or quota figure is asserted anywhere on this page —
+inventing one would make the whole section worthless. Use it to reason about the shape of
+the bill, not to forecast it.</p>
+</div>
+
+<h3>The team, and what each role actually needs</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Role</th><th class="num">Count</th><th>Daily work</th><th>Claude Code?</th><th>Cowork?</th><th>Seat</th></tr></thead>
+<tbody>
+<tr><td>Platform lead</td><td class="num">1</td><td>Architecture, reviews, standards</td><td>Sometimes</td><td>Yes — documents, plans</td><td>Premium</td></tr>
+<tr><td>Data engineer</td><td class="num">4</td><td>Pipelines, notebooks, transformations</td><td>Heavily, all day</td><td>Rarely</td><td>2 Premium, 2 Standard</td></tr>
+<tr><td>Analytics engineer</td><td class="num">2</td><td>Semantic models, metrics, tests</td><td>Heavily</td><td>Sometimes</td><td>1 Premium, 1 Standard</td></tr>
+<tr><td>BI developer</td><td class="num">3</td><td>Reports, dashboards, DAX</td><td>Sometimes</td><td>Yes — specs, docs</td><td>Standard</td></tr>
+<tr><td>Data analyst</td><td class="num">2</td><td>Analysis, ad-hoc questions, decks</td><td>No</td><td>Yes — the main tool</td><td>Standard</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>That falls out as <strong>4 Premium and 8 Standard</strong>: all-day agentic coding gets
+a Premium seat, everyone else starts Standard and moves up only on evidence.</p>
+
+<h3>Three mixes, costed</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Mix</th><th>Composition</th><th class="num">Per month (annual)</th><th class="num">Per year</th><th class="num">Per month (monthly billing)</th></tr></thead>
+<tbody>
+<tr><td>A — everyone Standard</td><td>12 × $20</td><td class="num">$240</td><td class="num">$2,880</td><td class="num">$300 &nbsp;<span class="lbl-sm">+25%</span></td></tr>
+<tr class="hi"><td><b>B — 4 Premium, 8 Standard</b></td><td>4 × $100 + 8 × $20</td><td class="num"><b>$560</b></td><td class="num"><b>$6,720</b></td><td class="num">$820 &nbsp;<span class="lbl-sm">+46%</span></td></tr>
+<tr><td>C — everyone Premium</td><td>12 × $100</td><td class="num">$1,200</td><td class="num">$14,400</td><td class="num">$1,500 &nbsp;<span class="lbl-sm">+25%</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Three things a stakeholder should take from that table:</p>
+
+<ul>
+<li><strong>Start at A, not C.</strong> Mix A is $240 a month and still gives all twelve
+people both tools. If nobody hits a ceiling, you are finished. Buying Premium for everyone
+"to be safe" costs five times as much for usage most of the team will never touch.</li>
+<li><strong>The monthly-billing penalty is not uniform.</strong> It is 25% on a
+single-seat-type mix but <strong>46% on Mix B</strong>, because the Premium premium is
+proportionally larger. If you mix seat types, annual billing matters more than you would
+guess.</li>
+<li><strong>Budget credits separately, and only after a month of real data.</strong>
+Modelling credit spend up front means inventing a number. Turn credits on with a spend
+limit, watch one cycle, then decide.</li>
+</ul>
+
+<div class="impl">
+<div class="hd">For the implementer — the upgrade trigger</div>
+<p>Move someone Standard → Premium when they repeatedly exhaust the <em>weekly</em> limit
+on work that matters, not when they hit a five-hour session limit once. Weekly limits reset
+at a fixed time assigned to the account, so the signal is clean and easy to observe. At $80
+a month extra per person, one upgrade is cheap; twelve speculative upgrades are $7,680 a
+year of headroom nobody asked for.</p>
+</div>
+
+<h2 id="s4"><span class="num">04</span>Blast radius</h2>
+
+<p>Both tools are agents doing real work, so "what happens on a bad day" is the honest
+question. The two bad days look nothing alike — and the one that sounds smaller is the one
+with fewer gates in front of it.</p>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 880 400" role="img" aria-label="Side by side comparison of what fails on a bad day. Claude Code's reach extends through the shell to production but passes a code review gate and a sandbox boundary. Cowork's reach is narrower in machine terms but three of its paths have no gate available on a Team plan: local session history, project creation, and MCP or web fetch traffic outside the egress allowlist.">
+  <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,1 L9,5 L0,9 z" fill="var(--muted)"/></marker>
+    <marker id="ar3r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,1 L9,5 L0,9 z" fill="var(--red)"/></marker></defs>
+
+  <text x="16" y="18" class="hd">CLAUDE CODE — LARGE REACH, GATES PRESENT</text>
+  <text x="466" y="18" class="hd">COWORK ON TEAM — NARROWER REACH, GATES MISSING</text>
+  <line x1="440" y1="26" x2="440" y2="380" stroke="var(--line-2)" stroke-dasharray="4 4"/>
+
+  <!-- LEFT: Claude Code -->
+  <rect x="16" y="38" width="150" height="44" rx="6" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="91" y="58" text-anchor="middle" font-size="12">developer machine</text>
+  <text x="91" y="74" text-anchor="middle" class="lbl-sm">agent in the terminal</text>
+
+  <rect x="16" y="112" width="150" height="40" rx="6" fill="var(--teal-soft)" stroke="var(--teal)"/>
+  <text x="91" y="130" text-anchor="middle" font-size="11.5" fill="var(--teal)">sandbox boundary</text>
+  <text x="91" y="145" text-anchor="middle" class="lbl-sm">filesystem + network</text>
+  <line x1="91" y1="86" x2="91" y2="108" stroke="var(--muted)" marker-end="url(#ar3)"/>
+
+  <rect x="16" y="182" width="150" height="40" rx="6" fill="var(--surface)" stroke="var(--line-2)"/>
+  <text x="91" y="200" text-anchor="middle" font-size="12">repository · shell</text>
+  <text x="91" y="215" text-anchor="middle" class="lbl-sm">logged-in cloud CLIs</text>
+  <line x1="91" y1="156" x2="91" y2="178" stroke="var(--muted)" marker-end="url(#ar3)"/>
+
+  <rect x="16" y="252" width="150" height="40" rx="6" fill="var(--teal-soft)" stroke="var(--teal)"/>
+  <text x="91" y="270" text-anchor="middle" font-size="11.5" fill="var(--teal)">code review</text>
+  <text x="91" y="285" text-anchor="middle" class="lbl-sm">a diff someone reads</text>
+  <line x1="91" y1="226" x2="91" y2="248" stroke="var(--muted)" marker-end="url(#ar3)"/>
+
+  <rect x="16" y="322" width="150" height="40" rx="6" fill="var(--surface)" stroke="var(--line-2)"/>
+  <text x="91" y="340" text-anchor="middle" font-size="12">production</text>
+  <text x="91" y="355" text-anchor="middle" class="lbl-sm">reached, but gated twice</text>
+  <line x1="91" y1="296" x2="91" y2="318" stroke="var(--muted)" marker-end="url(#ar3)"/>
+
+  <text x="190" y="132" font-size="11.5" fill="var(--ink-2)">Two real gates stand in</text>
+  <text x="190" y="150" font-size="11.5" fill="var(--ink-2)">the path, and the person</text>
+  <text x="190" y="168" font-size="11.5" fill="var(--ink-2)">at the second one reads</text>
+  <text x="190" y="186" font-size="11.5" fill="var(--ink-2)">diffs for a living.</text>
+  <text x="190" y="228" class="cap" fill="var(--teal)">RESIDUAL RISK</text>
+  <text x="190" y="250" font-size="11.5" fill="var(--ink-2)">Ambient credentials — a</text>
+  <text x="190" y="268" font-size="11.5" fill="var(--ink-2)">hygiene problem you</text>
+  <text x="190" y="286" font-size="11.5" fill="var(--ink-2)">already have, made faster.</text>
+
+  <!-- RIGHT: Cowork -->
+  <rect x="466" y="38" width="150" height="44" rx="6" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="541" y="58" text-anchor="middle" font-size="12">business machine</text>
+  <text x="541" y="74" text-anchor="middle" class="lbl-sm">agent in the desktop app</text>
+
+  <rect x="466" y="112" width="150" height="40" rx="6" fill="var(--teal-soft)" stroke="var(--teal)"/>
+  <text x="541" y="130" text-anchor="middle" font-size="11.5" fill="var(--teal)">per-task approval</text>
+  <text x="541" y="145" text-anchor="middle" class="lbl-sm">write tools, on by default</text>
+  <line x1="541" y1="86" x2="541" y2="108" stroke="var(--muted)" marker-end="url(#ar3)"/>
+
+  <rect x="466" y="182" width="150" height="40" rx="6" fill="var(--gold-soft)" stroke="var(--gold)"/>
+  <text x="541" y="200" text-anchor="middle" font-size="12" fill="var(--gold)">granted folders</text>
+  <text x="541" y="215" text-anchor="middle" class="lbl-sm">contracts · HR · finance</text>
+  <line x1="541" y1="156" x2="541" y2="178" stroke="var(--muted)" marker-end="url(#ar3)"/>
+
+  <!-- three ungated escapes -->
+  <rect x="640" y="176" width="224" height="34" rx="6" fill="var(--red-soft)" stroke="var(--red)" stroke-dasharray="5 3"/>
+  <text x="752" y="197" text-anchor="middle" font-size="11.5" fill="var(--red)">local session history — no export</text>
+
+  <rect x="640" y="220" width="224" height="34" rx="6" fill="var(--red-soft)" stroke="var(--red)" stroke-dasharray="5 3"/>
+  <text x="752" y="241" text-anchor="middle" font-size="11.5" fill="var(--red)">project creation — cannot restrict</text>
+
+  <rect x="640" y="264" width="224" height="34" rx="6" fill="var(--red-soft)" stroke="var(--red)" stroke-dasharray="5 3"/>
+  <text x="752" y="285" text-anchor="middle" font-size="11.5" fill="var(--red)">web fetch · MCP — outside egress</text>
+
+  <line x1="620" y1="196" x2="634" y2="193" stroke="var(--red)" marker-end="url(#ar3r)"/>
+  <line x1="620" y1="205" x2="634" y2="237" stroke="var(--red)" marker-end="url(#ar3r)"/>
+  <line x1="620" y1="212" x2="634" y2="281" stroke="var(--red)" marker-end="url(#ar3r)"/>
+
+  <text x="466" y="330" class="cap" fill="var(--red)">NO GATE AVAILABLE ON A TEAM PLAN</text>
+  <text x="466" y="352" font-size="11.5" fill="var(--ink-2)">Dashed borders mark paths with no control to turn on — not a risk</text>
+  <text x="466" y="370" font-size="11.5" fill="var(--ink-2)">you accept knowingly, but a feature that is not there yet.</text>
+</svg>
+</div>
+<figcaption><b>The asymmetry that matters.</b> Claude Code's risks are larger but land
+where review already exists. Cowork's are narrower but land where no review exists — and
+the three dashed paths on the right have no control to turn on. A gap is only as safe as
+the person standing in it.</figcaption>
+</figure>
+
+<h2 id="s5"><span class="num">05</span>Head to head</h2>
+
+<p>Every row is sourced first-party. This is the comparison table — but read it for the
+pattern rather than row by row, because the pattern is the finding.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>Claude Code</th><th>Claude Cowork</th></tr></thead>
+<tbody>
+<tr><td><b>Cost</b></td><td>Included in all paid plans</td><td>Included in all paid plans</td></tr>
+<tr><td><b>Usage</b></td><td>Shared per-member pool</td><td>The same shared pool</td></tr>
+<tr><td><b>Default posture</b></td><td>Manual mode starts <b>read-only</b></td><td>Session granted access to chosen folders</td></tr>
+<tr><td><b>Per-action gate</b></td><td>Asks before edits, tests, commands; approve once or always; explicit deny rules</td><td>Per-task approval for write-capable connector tools; "always allow" <b>off by default</b></td></tr>
+<tr><td><b>Read-only exemption</b></td><td>Built-in list — <code>ls</code>, <code>cat</code>, <code>git status</code> — runs without asking</td><td>Only if the connector annotates the tool read-only; most custom connectors don't, so all their tools stay gated</td></tr>
+<tr><td><b>Unattended mode</b></td><td>Auto mode: a separate classifier reviews actions and blocks unsafe ones; the org can disable it</td><td>Cloud sessions — <b>on by default on Team</b></td></tr>
+<tr><td><b>Web fetch</b></td><td><code>curl</code> / <code>wget</code> <b>not auto-approved</b>; can be denied outright</td><td>Egress rules <b>do not apply</b> to web fetch, web search, or MCP</td></tr>
+<tr><td><b>Isolation</b></td><td>Sandboxed bash with filesystem and network isolation; working-directory boundary; devcontainers</td><td>Cloud sessions in an Anthropic-managed environment; local sessions on the user's own machine</td></tr>
+<tr><td><b>Cloud session audit</b></td><td>"All operations in cloud sessions are logged for compliance and audit purposes"</td><td>Captured in the Compliance API; the OpenTelemetry stream "doesn't replace audit logging for compliance purposes"</td></tr>
+<tr><td><b>Local history</b></td><td>Repo under version control; session data under standard retention</td><td><b>Not</b> under standard retention, <b>no</b> admin export, <b>no</b> deletion endpoint yet</td></tr>
+<tr><td><b>Scoping to some people</b></td><td>Org policy and settings; auto mode disableable org-wide</td><td><b>All-or-nothing on Team.</b> Groups and custom roles are Enterprise-only</td></tr>
+<tr><td><b>Cloud credentials</b></td><td>Secure proxy with a scoped credential; the real token never enters the sandbox; push restricted to the working branch</td><td>Sessions and files saved to the member's Claude account</td></tr>
+<tr><td><b>Model training</b></td><td>Not on your content by default on Team and Enterprise</td><td>Same terms — it is the same plan</td></tr>
+<tr><td><b>Certifications</b></td><td>SOC 2 Type 2, ISO 27001</td><td>Same</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note teal">
+<span class="lbl">The pattern</span>
+<p>The two tools do not differ on price, on data terms, or on model quality. They differ
+on <strong>defaults, scoping, and what survives as evidence.</strong> On all three, Claude
+Code is currently ahead — which is the opposite of the intuition that a developer tool
+must be the riskier one.</p>
+</div>
+
+<h2 id="s6"><span class="num">06</span>Risk register — Claude Code</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Risk</th><th>Why it's real</th><th>Mitigation available today</th></tr></thead>
+<tbody>
+<tr><td class="rid">C1</td><td><b>Ambient credentials.</b> The agent's shell holds whatever the developer is logged into</td><td>One approved command can reach production, not just the repo</td><td>Sandboxed bash with network isolation; deny rules on deployment commands; keep production credentials out of the dev shell</td></tr>
+<tr><td class="rid">C2</td><td><b>Injection via fetched content.</b> Web pages, dependency READMEs and issue text can carry instructions</td><td>The agent reads untrusted text, then acts on it</td><td><code>curl</code> / <code>wget</code> are not auto-approved; add them to <code>permissions.deny</code> to block outright; context-aware analysis of the full request</td></tr>
+<tr><td class="rid">C3</td><td><b>Auto mode removes the human.</b> A classifier reviews actions instead of a person</td><td>A classifier is a model, and models are sometimes wrong</td><td>Explicit ask and deny rules still apply in auto mode; the organisation can turn auto mode off entirely</td></tr>
+<tr><td class="rid">C4</td><td><b>Reach beyond the working directory</b></td><td>Shell access is not bounded by the repository</td><td>Working-directory boundary; <code>/sandbox</code> to define autonomous zones; devcontainers for hard isolation</td></tr>
+<tr><td class="rid">C5</td><td><b>Self-hosted cloud sessions shift the burden</b></td><td>For sessions routed to your own infrastructure, isolation, network egress and git credentials become your deployment's responsibility</td><td>Use Anthropic-hosted environments unless you have a platform team to own the alternative</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Net:</strong> manageable, with real controls, on machines whose owners
+understand the risk. The residual risk is C1 — and that is a credential hygiene problem
+you already have, running faster.</p>
+
+<h2 id="s7"><span class="num">07</span>Risk register — Cowork</h2>
+
+<p>The headline here is not prompt injection. It is that three of these have no mitigation
+available on a Team plan.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>#</th><th>Risk</th><th>Why it's real</th><th>Mitigation available today</th></tr></thead>
+<tbody>
+<tr><td class="rid">W1</td><td><b>No per-team scoping on Team plans.</b> "Team plans don't have access to these controls, so Cowork remains all-or-nothing"</td><td>You cannot give Cowork to two analysts and withhold it from ten colleagues. It is the whole organisation or nobody</td><td><span class="nomit">NONE ON TEAM</span> — leave it off, or move to Enterprise for groups and custom roles</td></tr>
+<tr><td class="rid">W2</td><td><b>Cloud sessions are on by default on Team</b></td><td>Files and session state leave the machine unless someone turns the toggle off</td><td>Organisation settings → Cowork → turn off "Run Cowork in the cloud". Do this <em>before</em> enabling Cowork</td></tr>
+<tr><td class="rid">W3</td><td><b>Local session history escapes central control.</b> "Cannot be centrally managed or exported by admins", and "deletion endpoints for local sessions aren't available yet"</td><td>A deletion or subject-access request cannot be satisfied for local sessions. A records-management gap, not a hacking risk</td><td><span class="nomit">PARTIAL</span> — prefer cloud sessions if central retention matters more than local processing. Note this directly contradicts W2; the tension is real and you must pick</td></tr>
+<tr><td class="rid">W4</td><td><b>Egress controls have a stated carve-out.</b> "Network egress permissions don't apply to the web fetch or web search tools or MCPs"</td><td>Your domain allowlist does not constrain the paths most likely to move data out</td><td>Turn off web search for Cowork and Chat in organisation capabilities; govern MCP servers separately and explicitly</td></tr>
+<tr><td class="rid">W5</td><td><b>Egress settings bind at session start</b></td><td>Changing the allowlist mid-conversation has no effect on that session</td><td>Treat policy changes as requiring new sessions, and say so out loud</td></tr>
+<tr><td class="rid">W6</td><td><b>Projects cannot be restricted.</b> "Owners cannot restrict project creation at the organization level at this time"</td><td>Users can create workspaces with their own files, instructions and memory, outside any org-level policy</td><td><span class="nomit">NONE</span> — accept it, or don't deploy</td></tr>
+<tr><td class="rid">W7</td><td><b>Document-borne prompt injection</b></td><td>The user population is the least equipped to spot a malicious instruction inside a document</td><td>Keep "always allow" off for write tools (the default); curate the plugin catalogue; teach that outside documents are untrusted input</td></tr>
+<tr><td class="rid">W8</td><td><b>Inherited browser identity</b></td><td>When browsing, the agent acts as whoever the user is already signed in as</td><td>Restrict or disable browser use; stop treating "it only sees what the user sees" as reassurance</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Net:</strong> the controls that exist are sensible, and the approval defaults are
+genuinely conservative. But <strong>W1, W3 and W6 are accept-or-decline on a Team
+plan.</strong> That, not injection, is what makes Cowork the harder rollout.</p>
+
+<div class="note warn">
+<span class="lbl">On W7's evidence — read this before quoting it</span>
+<p>At launch in January 2026, researchers demonstrated document-borne exfiltration and a
+destructive command via indirect injection. Those were against a <strong>January 2026
+build</strong>, before general availability and before several of the controls above
+shipped. They belong here as the <em>class of failure to design against</em> — not as a
+description of how Cowork behaves today. Anyone citing them as current behaviour is
+misusing them.</p>
+</div>
+
+<div class="deeper">
+<div class="t">Go deeper</div>
+<ul>
+<li><span class="src">First-party</span><a href="https://support.claude.com/en/articles/13455879-use-claude-cowork-on-team-and-enterprise-plans">Use Claude Cowork on Team and Enterprise plans</a> — the source for every quoted control, default and gap in this section. The single most useful page if you are actually deciding.</li>
+<li><span class="src">First-party</span><a href="https://code.claude.com/docs/en/security">Claude Code security</a> — permission modes, the built-in protections, and the cloud-execution controls quoted in section 06.</li>
+</ul>
+</div>
+
+<h2 id="s8"><span class="num">08</span>Reaching Fabric: MCP server or CLI?</h2>
+
+<p>Your team's agent has to actually touch Fabric. There are two routes, and they differ
+far more than they look.</p>
+
+<div class="plain">
+<span class="t">In plain terms</span>
+<p>An <strong>MCP server</strong> is a small program that advertises a menu of tools to the
+model — "list workspaces", "create item", "grant role" — and the model picks one and calls
+it. A <strong>CLI</strong> is a command-line program: the agent writes out a command as
+text, and something has to run it. The difference is <em>who chooses the action</em>, and
+whether a human or a rule can stand in between.</p>
+<p>One more term you will meet below: <strong>role-based access control</strong>, or
+<strong>RBAC</strong> — the rule that what you are allowed to do depends on the role you
+have been given, so the same command succeeds for an admin and fails for a viewer. Both
+routes respect it, which is exactly why it matters <em>whose</em> role is being used.</p>
+</div>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 880 420" role="img" aria-label="Two routes from a developer machine to Microsoft Fabric. The MCP route passes outside the organisation's egress allowlist and presents the model with a tool menu that includes deleting workspaces and granting roles. The CLI route emits a text command that passes through an approval gate and inside the egress allowlist. Both preserve the user identity only when interactive authentication is used.">
+  <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,1 L9,5 L0,9 z" fill="var(--muted)"/></marker></defs>
+
+  <!-- egress boundary -->
+  <rect x="196" y="150" width="316" height="252" rx="10" fill="none" stroke="var(--teal)" stroke-dasharray="6 4"/>
+  <text x="204" y="396" class="cap" fill="var(--teal)">INSIDE YOUR EGRESS ALLOWLIST + APPROVAL GATES</text>
+
+  <text x="16" y="18" class="hd">ROUTE A — MCP SERVER</text>
+
+  <rect x="16" y="34" width="150" height="44" rx="6" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="91" y="54" text-anchor="middle" font-size="12">developer machine</text>
+  <text x="91" y="70" text-anchor="middle" class="lbl-sm">agent + MCP client</text>
+
+  <rect x="216" y="34" width="176" height="60" rx="6" fill="var(--gold-soft)" stroke="var(--gold)"/>
+  <text x="304" y="54" text-anchor="middle" font-size="12" font-weight="650" fill="var(--gold)">tool menu</text>
+  <text x="304" y="70" text-anchor="middle" class="lbl-sm">the model picks one</text>
+  <text x="304" y="86" text-anchor="middle" class="lbl-sm">delete workspace · grant role</text>
+  <line x1="170" y1="56" x2="210" y2="56" stroke="var(--muted)" marker-end="url(#ar4)"/>
+  <text x="172" y="30" class="cap">MODEL CHOOSES</text>
+
+  <rect x="442" y="34" width="176" height="60" rx="6" fill="var(--surface)" stroke="var(--line-2)"/>
+  <text x="530" y="54" text-anchor="middle" font-size="12">Entra ID OAuth</text>
+  <text x="530" y="70" text-anchor="middle" class="lbl-sm">as you, on the Core server</text>
+  <text x="530" y="86" text-anchor="middle" class="lbl-sm">or as a service principal</text>
+  <line x1="396" y1="64" x2="436" y2="64" stroke="var(--muted)" marker-end="url(#ar4)"/>
+
+  <rect x="668" y="34" width="196" height="60" rx="6" fill="var(--violet-soft)" stroke="var(--violet)"/>
+  <text x="766" y="54" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--violet)">Microsoft Fabric</text>
+  <text x="766" y="70" text-anchor="middle" class="lbl-sm">RBAC respected</text>
+  <text x="766" y="86" text-anchor="middle" class="lbl-sm">operations in audit logs</text>
+  <line x1="622" y1="64" x2="662" y2="64" stroke="var(--muted)" marker-end="url(#ar4)"/>
+
+  <text x="16" y="118" class="cap" fill="var(--red)">ROUTE A RUNS OUTSIDE THE BOUNDARY BELOW</text>
+  <text x="16" y="138" font-size="11.5" fill="var(--ink-2)">Anthropic: egress permissions "don't apply to … MCPs". Microsoft: destructive-operation safeguards "are not standardized".</text>
+
+  <text x="204" y="176" class="hd">ROUTE B — FABRIC CLI</text>
+
+  <rect x="216" y="192" width="176" height="60" rx="6" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="304" y="212" text-anchor="middle" font-size="12">developer machine</text>
+  <text x="304" y="228" text-anchor="middle" class="lbl-sm">agent writes a command</text>
+  <text x="304" y="244" text-anchor="middle" class="mono lbl-sm">fab ls Analytics.Workspace</text>
+
+  <rect x="216" y="278" width="176" height="60" rx="6" fill="var(--teal-soft)" stroke="var(--teal)"/>
+  <text x="304" y="298" text-anchor="middle" font-size="12" font-weight="650" fill="var(--teal)">approval gate</text>
+  <text x="304" y="314" text-anchor="middle" class="lbl-sm">a human, or a deny rule</text>
+  <text x="304" y="330" text-anchor="middle" class="lbl-sm">reads the text first</text>
+  <line x1="304" y1="256" x2="304" y2="274" stroke="var(--muted)" marker-end="url(#ar4)"/>
+
+  <rect x="442" y="278" width="176" height="60" rx="6" fill="var(--surface)" stroke="var(--line-2)"/>
+  <text x="530" y="298" text-anchor="middle" font-size="12" class="mono">fab auth login</text>
+  <text x="530" y="314" text-anchor="middle" class="lbl-sm">interactive browser = you</text>
+  <text x="530" y="330" text-anchor="middle" class="lbl-sm">or SP / managed identity</text>
+  <line x1="396" y1="308" x2="436" y2="308" stroke="var(--muted)" marker-end="url(#ar4)"/>
+
+  <rect x="668" y="278" width="196" height="60" rx="6" fill="var(--violet-soft)" stroke="var(--violet)"/>
+  <text x="766" y="298" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--violet)">Microsoft Fabric</text>
+  <text x="766" y="314" text-anchor="middle" class="lbl-sm">RBAC respected</text>
+  <text x="766" y="330" text-anchor="middle" class="lbl-sm">named human in the log</text>
+  <line x1="622" y1="308" x2="662" y2="308" stroke="var(--muted)" marker-end="url(#ar4)"/>
+
+  <rect x="640" y="150" width="224" height="80" rx="6" fill="var(--red-soft)" stroke="var(--red)" stroke-dasharray="5 3"/>
+  <text x="752" y="172" text-anchor="middle" class="cap" fill="var(--red)">THE TRAP ON BOTH ROUTES</text>
+  <text x="752" y="192" text-anchor="middle" font-size="11.5" fill="var(--red)">A shared service principal</text>
+  <text x="752" y="208" text-anchor="middle" font-size="11.5" fill="var(--red)">erases the person from the</text>
+  <text x="752" y="224" text-anchor="middle" font-size="11.5" fill="var(--red)">audit log. Identity, not tooling.</text>
+</svg>
+</div>
+<figcaption><b>The difference is where the decision is made and who can see it.</b> On
+Route A the model picks from a menu that includes deleting a workspace, and the traffic sits
+outside your egress allowlist. On Route B the agent produces text that a rule or a human can
+read before it runs. Neither route survives a shared service principal — that erases the
+named human from Fabric's audit log on both.</figcaption>
+</figure>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>Fabric MCP server</th><th>Fabric CLI (<code>fab</code>)</th></tr></thead>
+<tbody>
+<tr><td><b>What it is</b></td><td>Two servers — a remote <b>Core</b> server, and a local one for development workflows</td><td><code>pip install ms-fabric-cli</code>, then <code>fab auth login</code></td></tr>
+<tr><td><b>Status</b></td><td>Core server <span class="pill pv">Preview</span> — "features and configuration may change"</td><td><span class="pill ga">GA</span></td></tr>
+<tr><td><b>Identity</b></td><td>Core: browser OAuth 2.0 with Entra ID, as you. Data-agent server: a token that "can represent either a user identity or a service principal"</td><td>Four choices — interactive browser, service principal + secret, service principal + certificate, or managed identity</td></tr>
+<tr><td><b>Who chooses the action</b></td><td><b>The model</b> picks a tool from the menu</td><td><b>The agent writes a command</b>; a human or a rule can gate it before it runs</td></tr>
+<tr><td><b>Permissions</b></td><td>"All operations respect your Fabric RBAC permissions"</td><td>The same — whatever the signed-in identity can do</td></tr>
+<tr><td><b>Fabric-side audit</b></td><td>Core: "Fabric records them in audit logs"</td><td>API calls recorded the same way</td></tr>
+<tr><td><b>What's on the menu</b></td><td>Includes <b>delete workspaces</b> and <b>grant and revoke workspace roles</b> (Admin, Member, Contributor, Viewer)</td><td>Whatever command the agent writes — but each one is visible text first</td></tr>
+<tr><td><b>Destructive-op guardrails</b></td><td>Microsoft: safeguards "are not standardized in the MCP specification and may not be supported by all clients"</td><td>Your own deny rules, e.g. block anything matching a delete</td></tr>
+<tr><td><b>Compliance boundary</b></td><td>Microsoft: "may interact with clients and services that process data outside of Fabric's compliance boundaries… <b>You are responsible</b>"</td><td>A local process calling Fabric's API</td></tr>
+<tr><td><b>Seen by Claude's egress allowlist</b></td><td><b>No</b> — "network egress permissions don't apply to … MCPs"</td><td>Yes — a normal command under normal approval</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Why this matters more than it sounds</h3>
+
+<p>Three first-party statements, from two vendors who did not coordinate, all point at the
+same soft spot:</p>
+
+<ol>
+<li><strong>Anthropic:</strong> network egress permissions do not apply to MCP servers.</li>
+<li><strong>Microsoft:</strong> an MCP integration "may interact with clients and services
+that process data outside of Fabric's compliance boundaries", and the responsibility is
+yours.</li>
+<li><strong>Microsoft:</strong> "Autonomous or misconfigured clients may perform
+destructive actions", and the safeguards that would prevent that are not part of the
+protocol.</li>
+</ol>
+
+<p>Add that the Core MCP server's tool menu includes deleting workspaces and granting
+workspace roles, and the conclusion is not "MCP is unsafe". It is that <strong>MCP is the
+route your existing egress controls and approval gates were not built to see, carrying
+tools that can escalate privileges and destroy things.</strong></p>
+
+<h3>The trap on the CLI route</h3>
+
+<p>The CLI is not automatically safer, and this is where it goes wrong. Because
+<code>fab auth login</code> offers service-principal login, and because that is the
+convenient option for anything automated, teams drift towards putting one shared service
+principal in the agent's environment. Do that and <strong>you have thrown away per-user
+governance</strong>: every action arrives in Fabric's audit log as the service principal
+rather than as the person, and RBAC can no longer tell your twelve engineers apart.</p>
+
+<div class="impl">
+<div class="hd">For the implementer — the identity rule, and why it's the same rule twice</div>
+<p>Microsoft states it plainly in its own MCP authentication guidance: under shared
+authentication "user context doesn't persist"; only individual authentication — OAuth
+identity passthrough — preserves it. Exactly the same applies to a shared service principal
+behind a CLI. Fabric's workspace identity carries the matching warning: it is "an
+automatically managed service principal", and "any individual given access to the identity
+is allowed to assume it."</p>
+<p>There is a second-order version of this that bites on schedules. Fabric checks the
+running identity's workspace role at run time, so "a pipeline that succeeds when you run it
+manually might fail when the same pipeline runs on a schedule under a different identity."
+Per-user auth for interactive work and a dedicated least-privilege principal for unattended
+runs is not just a governance preference — it is what stops your scheduled jobs breaking.</p>
+</div>
+
+<div class="note teal">
+<span class="lbl">The rule</span>
+<p>Interactive, per-user authentication for interactive work. A service principal only for
+genuinely unattended automation, each with its own least-privilege workspace role. <strong>A
+shared service principal used for a human's daily work is the single worst configuration
+available on either route.</strong></p>
+</div>
+
+<div class="deeper">
+<div class="t">Go deeper</div>
+<ul>
+<li><span class="src">First-party</span><a href="https://learn.microsoft.com/rest/api/fabric/articles/mcp-servers/core-remote/overview-core-mcp-server">Fabric Core MCP Server overview</a> — the preview status, the OAuth flow, and the full tool list including workspace deletion and role management.</li>
+<li><span class="src">First-party</span><a href="https://learn.microsoft.com/power-bi/developer/mcp/mcp-servers-overview">Power BI MCP servers overview</a> — Microsoft's own security, destructive-action and compliance-boundary warnings, worth reading verbatim.</li>
+<li><span class="src">First-party</span><a href="https://learn.microsoft.com/rest/api/fabric/articles/fabric-command-line-interface">Fabric command line interface</a> — install, <code>fab auth login</code>, and the four authentication methods.</li>
+<li><span class="src">First-party</span><a href="https://learn.microsoft.com/azure/foundry/agents/how-to/mcp-authentication">Set up authentication for MCP tools</a> — the shared-versus-individual identity table that makes the governance consequence explicit.</li>
+</ul>
+</div>
+
+<h2 id="s9"><span class="num">09</span>A normal day</h2>
+
+<p>Abstract controls are hard to weigh. Here is what each route feels like in practice.</p>
+
+<h3>On the CLI route</h3>
+<p>An engineer opens the terminal and once a day runs <code>fab auth login</code>, signing
+in as themselves in the browser. Their agent proposes a command — a listing, a notebook
+deployment. First time, they approve it; if it is routine and safe they allow it from then
+on. Anything destructive sits in a deny rule and never runs. Every call reaches Fabric as
+<em>them</em>, so the audit log names a person and RBAC applies their actual roles.
+<em>What they gave up:</em> the agent cannot discover Fabric's capabilities on its own, so
+occasionally they have to tell it which command exists.</p>
+
+<h3>On the MCP route</h3>
+<p>The engineer connects once through a browser OAuth flow and the tool menu appears. The
+agent now explores Fabric by itself — searching the catalogue, inspecting items, chaining
+calls — and it is genuinely faster and needs far less API knowledge. <em>What they gave
+up:</em> the model is choosing from a menu that includes deleting a workspace and granting
+an Admin role, the guardrails against that are not part of the protocol, and this traffic
+sits outside the egress allowlist. On the Core server their identity is preserved and
+Fabric logs the operations — that is the good case. On a server wired to a service
+principal, it is not.</p>
+
+<h3>In Cowork</h3>
+<p>An analyst grants access to a folder of monthly reports and asks for a summary and a
+deck. It works, it is impressive, and nobody had to learn anything. Behind that: if it was
+a local session, the conversation history now sits on that laptop, outside retention policy
+and beyond admin export. If it was a cloud session — the default on Team — the files went
+to their Claude account. And if one of those documents came from outside the company, it
+was untrusted input handed to an agent by someone with no reason to suspect it.</p>
+
+<h2 id="s10"><span class="num">10</span>What I'd do — and the case against it</h2>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 880 470" role="img" aria-label="A decision flow. Starting from a task: repository or code work routes to Claude Code in manual sandboxed mode, and if it needs Fabric, to the CLI with per-user login and destructive commands denied. Non-code work touching regulated or personal data routes away from Cowork on a Team plan to chat with no folder access. Other non-code work routes to Cowork with cloud sessions off and per-task write approvals. Unattended automation routes to a dedicated least-privilege service principal.">
+  <defs><marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,1 L9,5 L0,9 z" fill="var(--muted)"/></marker></defs>
+
+  <text x="16" y="18" class="hd">START HERE — A PIECE OF WORK NEEDS DOING</text>
+
+  <!-- Q1 -->
+  <rect x="16" y="34" width="180" height="48" rx="6" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="106" y="56" text-anchor="middle" font-size="12">Is it repository or</text>
+  <text x="106" y="72" text-anchor="middle" font-size="12">code work?</text>
+
+  <!-- yes → Claude Code -->
+  <rect x="256" y="34" width="192" height="48" rx="6" fill="var(--teal-soft)" stroke="var(--teal)"/>
+  <text x="352" y="56" text-anchor="middle" font-size="12" fill="var(--teal)">Claude Code</text>
+  <text x="352" y="72" text-anchor="middle" class="lbl-sm">manual mode · sandboxed</text>
+  <line x1="200" y1="58" x2="250" y2="58" stroke="var(--muted)" marker-end="url(#ar5)"/>
+  <text x="204" y="50" class="cap" fill="var(--teal)">YES</text>
+
+  <!-- needs Fabric? -->
+  <rect x="504" y="34" width="164" height="48" rx="6" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="586" y="56" text-anchor="middle" font-size="12">Does it need to</text>
+  <text x="586" y="72" text-anchor="middle" font-size="12">reach Fabric?</text>
+  <line x1="452" y1="58" x2="498" y2="58" stroke="var(--muted)" marker-end="url(#ar5)"/>
+
+  <rect x="700" y="24" width="164" height="68" rx="6" fill="var(--teal-soft)" stroke="var(--teal)"/>
+  <text x="782" y="44" text-anchor="middle" font-size="12" fill="var(--teal)">Fabric CLI</text>
+  <text x="782" y="60" text-anchor="middle" class="lbl-sm">per-user interactive login</text>
+  <text x="782" y="76" text-anchor="middle" class="lbl-sm">deny destructive commands</text>
+  <line x1="672" y1="58" x2="694" y2="58" stroke="var(--muted)" marker-end="url(#ar5)"/>
+  <text x="674" y="50" class="cap" fill="var(--teal)">YES</text>
+
+  <!-- Q2 -->
+  <rect x="16" y="126" width="180" height="48" rx="6" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="106" y="148" text-anchor="middle" font-size="12">Does it touch regulated</text>
+  <text x="106" y="164" text-anchor="middle" font-size="12">or personal data?</text>
+  <line x1="106" y1="86" x2="106" y2="122" stroke="var(--muted)" marker-end="url(#ar5)"/>
+  <text x="112" y="108" class="cap">NO</text>
+
+  <!-- yes → not Cowork -->
+  <rect x="256" y="116" width="192" height="68" rx="6" fill="var(--red-soft)" stroke="var(--red)"/>
+  <text x="352" y="136" text-anchor="middle" font-size="12" fill="var(--red)">Not Cowork on Team</text>
+  <text x="352" y="152" text-anchor="middle" class="lbl-sm">all-or-nothing · local history</text>
+  <text x="352" y="168" text-anchor="middle" class="lbl-sm">uncontrolled · use plain chat</text>
+  <line x1="200" y1="150" x2="250" y2="150" stroke="var(--muted)" marker-end="url(#ar5)"/>
+  <text x="204" y="142" class="cap" fill="var(--red)">YES</text>
+
+  <!-- Q3 -->
+  <rect x="16" y="218" width="180" height="48" rx="6" fill="var(--surface-2)" stroke="var(--line-2)"/>
+  <text x="106" y="240" text-anchor="middle" font-size="12">Is it unattended,</text>
+  <text x="106" y="256" text-anchor="middle" font-size="12">on a schedule?</text>
+  <line x1="106" y1="178" x2="106" y2="214" stroke="var(--muted)" marker-end="url(#ar5)"/>
+  <text x="112" y="200" class="cap">NO</text>
+
+  <rect x="256" y="208" width="192" height="68" rx="6" fill="var(--violet-soft)" stroke="var(--violet)"/>
+  <text x="352" y="228" text-anchor="middle" font-size="12" fill="var(--violet)">Dedicated principal</text>
+  <text x="352" y="244" text-anchor="middle" class="lbl-sm">its own least-privilege role</text>
+  <text x="352" y="260" text-anchor="middle" class="lbl-sm">never shared with humans</text>
+  <line x1="200" y1="242" x2="250" y2="242" stroke="var(--muted)" marker-end="url(#ar5)"/>
+  <text x="204" y="234" class="cap" fill="var(--violet)">YES</text>
+
+  <!-- final: Cowork -->
+  <rect x="16" y="310" width="432" height="76" rx="6" fill="var(--gold-soft)" stroke="var(--gold)"/>
+  <text x="232" y="332" text-anchor="middle" font-size="12.5" font-weight="650" fill="var(--gold)">Cowork — with three switches set first</text>
+  <text x="232" y="350" text-anchor="middle" class="lbl-sm">1 · turn OFF "Run Cowork in the cloud" (on by default on Team)</text>
+  <text x="232" y="366" text-anchor="middle" class="lbl-sm">2 · leave write-tool "always allow" OFF · 3 · curate the plugin catalogue</text>
+  <line x1="106" y1="270" x2="106" y2="306" stroke="var(--muted)" marker-end="url(#ar5)"/>
+  <text x="112" y="292" class="cap">NO</text>
+
+  <!-- the accept-or-decline gate -->
+  <rect x="504" y="180" width="360" height="110" rx="8" fill="var(--surface)" stroke="var(--red)" stroke-dasharray="5 3"/>
+  <text x="684" y="204" text-anchor="middle" class="cap" fill="var(--red)">BEFORE ANY OF THE ABOVE — THE ONE REAL GATE</text>
+  <text x="684" y="228" text-anchor="middle" font-size="12" fill="var(--ink-2)">Do you have formal retention or deletion obligations?</text>
+  <text x="684" y="250" text-anchor="middle" font-size="12" fill="var(--red)">If yes, W1 / W3 / W6 have no mitigation on a Team plan.</text>
+  <text x="684" y="270" text-anchor="middle" font-size="12" fill="var(--ink-2)">The answer is wait, or move to Enterprise. Not "be careful".</text>
+
+  <text x="504" y="326" class="cap">SEATS, INDEPENDENT OF ALL OF THIS</text>
+  <text x="504" y="348" font-size="12" fill="var(--ink-2)">4 Premium + 8 Standard, billed annually = $6,720/year.</text>
+  <text x="504" y="368" font-size="12" fill="var(--ink-2)">Start Standard; upgrade on repeated weekly-limit hits.</text>
+
+  <text x="16" y="424" class="cap">WHAT THIS FLOW ENCODES</text>
+  <text x="16" y="446" font-size="12" fill="var(--ink-2)">Every branch turns on one of two questions: whose identity is acting, and what survives as evidence. Nothing here turns on price.</text>
+</svg>
+</div>
+<figcaption><b>The decision, as a flow.</b> Note what the branches are <em>not</em> about:
+no branch turns on cost, model quality, or how impressive the demo was. They all turn on
+identity and evidence — which is why the same shape resolves both the Claude question and
+the Fabric question.</figcaption>
+</figure>
+
+<h3>The recommendation</h3>
+
+<p><strong>Buy Mix B, annually.</strong> Four Premium seats for the people who live inside
+an agent all day, eight Standard for everyone else — $6,720 a year for twelve people.
+Start everyone on Standard if you want to be careful, and upgrade on evidence of repeated
+weekly-limit hits, not on anticipation.</p>
+
+<p><strong>Give Claude Code to the engineers, in manual mode, sandboxed.</strong> Deny
+<code>curl</code> and <code>wget</code>. Put deployment commands in deny rules. Keep
+production credentials out of the shell the agent can see. This is the surface with the best
+defaults and the best evidence trail, and it lands on people who review changes for a
+living.</p>
+
+<p><strong>Turn off "Run Cowork in the cloud" before you enable Cowork.</strong> It is on
+by default on Team. Make turning it back on a deliberate decision with a reason attached.</p>
+
+<p><strong>Then make an honest call on Cowork itself.</strong> On a Team plan it is
+all-or-nothing, you cannot restrict project creation, and local session history sits outside
+your retention and deletion controls. If your organisation has real records-management
+obligations, those three facts <em>are</em> the decision, and the answer is either "wait" or
+"move to Enterprise for groups and custom roles". If it does not, enable it, keep write-tool
+approvals per-task, curate the plugin catalogue, and tell people that a document from
+outside the company is untrusted input.</p>
+
+<p><strong>For Fabric, use the CLI with interactive per-user login for daily work.</strong>
+Not because a CLI is inherently safer, but because it keeps three things you otherwise lose:
+a named human in the audit log, a text command a rule can gate, and traffic your egress
+policy can actually see. Use the Core MCP server where its discovery genuinely pays —
+read-heavy exploration by people who understand what is on the tool menu — and keep it off
+the path that touches sensitive workspaces while it is still in preview.</p>
+
+<h3>The case against all of that</h3>
+
+<div class="note violet">
+<span class="lbl">Steel-manning the opposite position</span>
+<p><strong>I am optimising for auditability at the expense of the people who need the help
+most.</strong> The engineers I am handing Claude Code to are the ones who least need an AI
+assistant to be productive — they already have tooling, scripting and command-line fluency.
+The analysts I am telling to wait are the ones for whom Cowork is transformative, because it
+removes the exact barrier that has always excluded them. A twelve-person team is not a bank.
+Weighing a records-management gap in local session history against months of compounding
+productivity for half the team may simply be the wrong trade, and "wait for Enterprise" can
+be an expensive way to feel careful.</p>
+<p>The counter to my Fabric recommendation is sharper still. I am recommending the older,
+slower route largely because the newer one is in preview — but preview status is a statement
+about change velocity, not about risk. Microsoft's warnings are generic MCP caveats that
+apply to <em>any</em> MCP client, including one driven from a CLI-based agent. And "the model
+picks from a menu" versus "the agent writes a command" is a thinner distinction than I made
+it sound: a command can be destructive too, and in clients that support it a permission rule
+can gate an MCP tool call just as well as a shell command.</p>
+</div>
+
+<p><strong>Where I still land, and why.</strong> Two of the three Cowork gaps — no per-team
+scoping, no project restriction — are not risk judgements at all. They are missing features,
+and no amount of appetite makes them go away on a Team plan. That is what tips it. But if
+your organisation carries no formal retention obligations, enable Cowork, and I would not
+argue hard.</p>
+
+<footer>
+<p><b>Facts basis.</b> Every price, quote and status on this page traces to a numbered,
+dated source in <code>claude-surfaces-research.md</code>, alongside this file. Prices are US
+list, excluding tax; Anthropic states that pricing, currency and tax handling vary by region
+and that prices are subject to change. The costed scenario is arithmetic on list prices under
+stated assumptions — no usage, quota or consumption figure is asserted anywhere.</p>
+
+<p><b>Shelf life.</b> Verified 2026-09-02. The Fabric Core MCP server is in preview. Cowork's
+cloud-session defaults, Compliance API coverage of local sessions, and its admin control
+surface are all actively changing, as are Claude Code's permission modes across plans and
+surfaces. Roughly a quarter of the surface described here is preview or beta. Re-check any
+status claim before relying on it.</p>
+
+<p><b>Corrections made while researching this.</b> Cowork is not a research preview and is
+not gated behind a Premium seat — both were true earlier in 2026 and are not now. Cowork
+<em>is</em> captured in the Compliance API; a widely repeated claim that it is not is wrong.
+The real gaps are narrower, and are listed in section 07.</p>
+
+<p><b>The organisation is invented.</b> No real organisation, person, workspace or object
+name appears anywhere on this page. The twelve-person Fabric team is a composite built to
+make the arithmetic concrete.</p>
+</footer>
+
+</div>
+
+</body>
+</html>
