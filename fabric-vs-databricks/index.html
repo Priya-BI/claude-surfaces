@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fabric or Databricks</title>
+<meta name="description" content="Microsoft Fabric and Databricks compared on the thing that actually sets the bill: duty cycle, not data volume. First-party prices from the Azure retail price API, the throttling stages, a break-even calculation, and a decision tree.">
+<meta name="color-scheme" content="light dark">
+</head>
+<body>
+<style>
+/* ── Palette: warm editorial. Inherited from the repo's existing explainer pages
+   so this page reads as part of the same set. Light on bare :root, dark redefined
+   twice so an explicit data-theme wins in both directions. Local font stacks only. ── */
+:root{
+  --bg:#FBF8F3; --surface:#FFFFFF; --surface-2:#F4EFE7;
+  --ink:#1F1B16; --ink-2:#4A4239; --muted:#6B6259;
+  --line:#E3DACC; --line-2:#CFC3B0;
+  --accent:#B4531F; --accent-soft:#F6E7DC;
+  --teal:#1F5F5B; --teal-soft:#DFEDEB;
+  --gold:#8A6A12; --gold-soft:#F6EED8;
+  --red:#9B2C2C; --red-soft:#F7E4E4;
+  --violet:#5B3A8A; --violet-soft:#EBE3F5;
+  --shadow:0 1px 2px rgba(31,27,22,.06),0 8px 24px rgba(31,27,22,.05);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16130F; --surface:#201C17; --surface-2:#282219;
+    --ink:#F2EDE4; --ink-2:#D8D0C4; --muted:#A69C8F;
+    --line:#332C24; --line-2:#4A4034;
+    --accent:#E8834A; --accent-soft:#3A2418;
+    --teal:#5FB8B0; --teal-soft:#12302E;
+    --gold:#D6AE49; --gold-soft:#332A12;
+    --red:#E88080; --red-soft:#3A1E1E;
+    --violet:#B79BE0; --violet-soft:#251A38;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16130F; --surface:#201C17; --surface-2:#282219;
+  --ink:#F2EDE4; --ink-2:#D8D0C4; --muted:#A69C8F;
+  --line:#332C24; --line-2:#4A4034;
+  --accent:#E8834A; --accent-soft:#3A2418;
+  --teal:#5FB8B0; --teal-soft:#12302E;
+  --gold:#D6AE49; --gold-soft:#332A12;
+  --red:#E88080; --red-soft:#3A1E1E;
+  --violet:#B79BE0; --violet-soft:#251A38;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:16.5px;line-height:1.68;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:74rem;margin:0 auto;padding:0 1.5rem 6rem}
+
+header{border-bottom:1px solid var(--line);background:var(--surface-2);padding:3.5rem 1.5rem 2.75rem;margin-bottom:2.5rem}
+header .inner{max-width:74rem;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 .9rem}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,4.4vw,3.1rem);line-height:1.08;
+  letter-spacing:-.02em;margin:0 0 1rem;max-width:34ch;text-wrap:balance}
+.standfirst{font-size:1.14rem;color:var(--ink-2);max-width:62ch;margin:0 0 1.4rem}
+.meta{display:flex;flex-wrap:wrap;gap:.5rem 1.6rem;font-family:var(--mono);font-size:.76rem;
+  color:var(--muted);border-top:1px solid var(--line-2);padding-top:1.1rem;margin-top:1.5rem}
+.meta b{color:var(--ink-2);font-weight:500}
+
+h2{font-family:var(--serif);font-size:1.9rem;font-weight:600;letter-spacing:-.015em;
+  margin:3.8rem 0 .6rem;padding-top:1.7rem;border-top:1px solid var(--line);text-wrap:balance}
+h2 .num{font-family:var(--mono);font-size:.8rem;color:var(--accent);display:block;
+  letter-spacing:.1em;margin-bottom:.5rem;font-weight:400}
+h3{font-size:1.15rem;font-weight:650;margin:2.3rem 0 .55rem;letter-spacing:-.005em}
+p{margin:0 0 1rem;max-width:70ch}
+ul,ol{margin:0 0 1rem;padding-left:1.3rem;max-width:70ch}
+li{margin-bottom:.45rem}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+code{font-family:var(--mono);font-size:.855em;background:var(--surface-2);padding:.12em .38em;
+  border-radius:3px;border:1px solid var(--line);overflow-wrap:break-word}
+strong{font-weight:650}
+.lead{font-size:1.05rem;color:var(--ink-2);max-width:66ch}
+
+/* callouts */
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:.95rem 1.15rem;
+  border-radius:0 7px 7px 0;margin:0 0 1.4rem}
+.note.teal{border-left-color:var(--teal);background:var(--teal-soft)}
+.note.warn{border-left-color:var(--red);background:var(--red-soft)}
+.note.gold{border-left-color:var(--gold);background:var(--gold-soft)}
+.note.violet{border-left-color:var(--violet);background:var(--violet-soft)}
+.note p{margin:0;max-width:66ch}
+.note p+p{margin-top:.6rem}
+.note .lbl{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+  display:block;margin-bottom:.4rem;opacity:.85;font-weight:600}
+
+/* plain-language definition */
+.plain{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:.9rem 1.1rem;margin:0 0 1.3rem}
+.plain .t{font-family:var(--mono);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--teal);font-weight:650;display:block;margin-bottom:.35rem}
+.plain p{margin:0;font-size:1rem}
+
+/* "for the implementer" — skippable technical depth */
+.impl{border:1px dashed var(--line-2);border-left:3px solid var(--violet);border-radius:0 8px 8px 0;
+  padding:.85rem 1.1rem;margin:0 0 1.4rem;background:var(--surface)}
+.impl .hd{font-family:var(--mono);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--violet);font-weight:650;margin-bottom:.4rem}
+.impl .hd::before{content:"\2317  "}
+.impl p{margin:0;font-size:.94rem;color:var(--ink-2);max-width:68ch}
+.impl p+p{margin-top:.55rem}
+
+/* tables */
+.tw{overflow-x:auto;margin:0 0 1.5rem;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:34rem;font-size:.87rem}
+th,td{text-align:left;padding:.62rem .85rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-2);font-family:var(--mono);font-size:.7rem;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td code{font-size:.8rem}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.hi td{background:var(--teal-soft)}
+
+/* figures */
+figure{margin:1.9rem 0 2rem}
+.fig-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:1.4rem 1.2rem;overflow-x:auto;box-shadow:var(--shadow)}
+/* Default text colour is set HERE, on the container, so <text> inherits it. Do NOT
+   move it to a `svg text{fill:…}` rule: a CSS rule beats a presentation attribute,
+   so that would silently override every fill="var(--teal)" on an individual <text>. */
+.fig-box svg{display:block;width:100%;height:auto;min-width:40rem;fill:var(--ink)}
+figcaption{font-size:.83rem;color:var(--muted);margin-top:.7rem;max-width:70ch;padding-left:.1rem}
+figcaption b{color:var(--ink-2);font-weight:600}
+svg text{font-family:var(--sans)}
+svg .mono{font-family:var(--mono)}
+svg .lbl-sm{font-size:10px;fill:var(--muted)}
+svg .cap{font-size:9.5px;letter-spacing:.1em;fill:var(--muted);font-family:var(--mono)}
+svg .hd{font-size:9.5px;letter-spacing:.12em;fill:var(--muted);font-family:var(--mono)}
+
+/* pills */
+.pill{display:inline-block;font-family:var(--mono);font-size:.66rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:.16em .5em;border-radius:4px;white-space:nowrap;vertical-align:.08em}
+.ga{background:var(--teal-soft);color:var(--teal);border:1px solid var(--teal)}
+.pv{background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold)}
+.beta{background:var(--red-soft);color:var(--red);border:1px solid var(--red)}
+
+/* toc */
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1.1rem 1.3rem;margin:0 0 1rem}
+.toc .t{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem}
+.toc ol{columns:2;column-gap:2.4rem;margin:0;padding-left:1.2rem;font-size:.9rem;max-width:none}
+.toc li{margin-bottom:.28rem}
+@media(max-width:640px){.toc ol{columns:1}}
+
+/* go-deeper reading list */
+.deeper{border-left:3px solid var(--teal);background:var(--surface);border-radius:0 8px 8px 0;
+  padding:.85rem 1.1rem;margin:1.6rem 0 0}
+.deeper .t{font-family:var(--mono);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--teal);font-weight:650;margin-bottom:.5rem}
+.deeper ul{list-style:none;padding:0;margin:0;max-width:none}
+.deeper li{font-size:.87rem;margin-bottom:.4rem;color:var(--ink-2)}
+.deeper .src{font-family:var(--mono);font-size:.63rem;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--teal);color:var(--teal);border-radius:3px;padding:.1em .4em;margin-right:.45rem}
+
+footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.5rem;font-size:.83rem;color:var(--muted)}
+footer p{max-width:70ch}
+footer b{color:var(--ink-2)}
+@media(max-width:640px){
+  body{font-size:16px}
+  header{padding:2.5rem 1.15rem 2rem}
+  .wrap{padding:0 1.15rem 4rem}
+}
+
+/* ── Additions for this page only ─────────────────────────────────────────
+   A pros-and-cons pair is one object, not two cards that happen to sit side
+   by side: same edges, same inner padding, same running order (good first,
+   bad second), so the eye compares row against row rather than block against
+   block. The 3px top rule is the only thing that differs, and it carries the
+   colour each platform is drawn in throughout the page. ── */
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin:0 0 1.7rem}
+@media(max-width:760px){.pc{grid-template-columns:1fr}}
+.pc>div{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:1.05rem 1.2rem 1.15rem}
+.pc>div.fab{border-top:3px solid var(--accent)}
+.pc>div.dbx{border-top:3px solid var(--teal)}
+.pc h4{margin:0 0 .12rem;font-size:1.04rem;font-weight:650;letter-spacing:-.005em}
+.pc .who{font-family:var(--mono);font-size:.65rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.85rem}
+.pc ul{margin:0 0 .95rem;padding-left:1.05rem;font-size:.9rem;max-width:none}
+.pc li{margin-bottom:.38rem;color:var(--ink-2)}
+.pc ul:last-of-type{margin-bottom:0}
+.pc .g{font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:650;display:block;margin-bottom:.45rem;color:var(--teal)}
+.pc .b{color:var(--red)}
+
+/* the one-line verdict that closes a section */
+.verdict{border-left:3px solid var(--ink-2);padding:.15rem 0 .15rem 1rem;margin:0 0 1.5rem;
+  font-size:1.02rem;color:var(--ink);max-width:66ch}
+.verdict b{font-weight:650}
+
+/* arithmetic worked in the open, so it can be checked line by line */
+.sum{background:var(--surface);border:1px solid var(--line-2);border-radius:9px;
+  padding:1rem 1.2rem;margin:0 0 1.4rem;font-family:var(--mono);font-size:.83rem;
+  line-height:1.9;color:var(--ink-2);overflow-x:auto}
+.sum .r{display:block;white-space:nowrap}
+.sum .r b{color:var(--ink);font-weight:650}
+.sum .t{font-family:var(--sans);font-size:.67rem;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--accent);font-weight:650;display:block;margin-bottom:.5rem;line-height:1.4}
+</style>
+
+<header>
+<div class="inner">
+<p class="eyebrow">Platform choice · verified 2026-09-04</p>
+<h1>Fabric or Databricks</h1>
+<p class="standfirst">The question is normally asked as &ldquo;which one handles large
+data better?&rdquo; That question has no answer, because neither meter measures your
+data. This compares the two on what actually sets the bill: how many hours a day the
+compute is busy, and what each platform does when it is busier than you paid for.</p>
+<p class="lead">Written for the person who has to defend a platform decision in a
+steering meeting, and needs arithmetic rather than a preference.</p>
+<div class="meta">
+<span><b>Verified</b> 2026-09-04</span>
+<span><b>Prices</b> Azure retail price API, East US, USD</span>
+<span><b>Sources</b> first-party only</span>
+<span><b>Shelf life</b> short — see section 10</span>
+</div>
+</div>
+</header>
+
+<div class="wrap">
+
+<div class="toc">
+<div class="t">On this page</div>
+<ol>
+<li><a href="#ask">The question, restated</a></li>
+<li><a href="#what">What each one actually is</a></li>
+<li><a href="#meters">Two meters, two shapes</a></li>
+<li><a href="#prices">What the numbers are</a></li>
+<li><a href="#breakeven">The break-even is a duty cycle</a></li>
+<li><a href="#growth">What happens when the data grows</a></li>
+<li><a href="#proscons">Pros and cons, plainly</a></li>
+<li><a href="#decide">Choosing</a></li>
+<li><a href="#both">The option you did not ask about</a></li>
+<li><a href="#wrong">Where this could be wrong</a></li>
+<li><a href="#sources">Sources</a></li>
+</ol>
+</div>
+
+<h2 id="ask"><span class="num">01</span>The question, restated</h2>
+
+<p>You asked which platform is more cost-effective for large data, and which stays
+reliable as the data grows. Both halves of that carry an assumption that is worth
+testing before any number goes on a slide.</p>
+
+<h3>Assumption one: data volume drives cost</h3>
+
+<p>It does not. Look at what the two meters actually count.</p>
+
+<p>Fabric bills <b>capacity units per hour</b>. You buy an F SKU and you pay for every
+hour it exists. The meter runs at the same rate whether the lakehouse holds 5 GB or
+5 PB. Databricks bills <b>Databricks units per hour</b> of compute consumed. That meter
+counts how long a cluster ran and how big it was. It does not read your row count
+either.</p>
+
+<p>Data volume reaches the bill only twice, and both are small compared with compute.
+Storage is charged per gigabyte-month — $0.026 in OneLake hot storage. And bigger data
+takes longer to scan, so jobs run longer. That second effect is real, but it is
+mediated: what you pay for is the extra <i>minutes</i>, not the extra bytes.</p>
+
+<p>The variable that actually moves the invoice by an order of magnitude is
+<b>duty cycle</b>: the fraction of the hours in a month during which the compute is
+doing work. Section 05 puts a number on it.</p>
+
+<h3>Assumption two: growth threatens reliability</h3>
+
+<p>On neither platform is the first failure a reliability failure.</p>
+
+<p>Fabric's answer to more load than you paid for is <b>throttling</b>. That is a
+documented, staged, deliberate governance behaviour, not a fault. Requests get delayed,
+then rejected, in a published order. The platform is working exactly as designed while
+your users see errors.</p>
+
+<p>Databricks' answer to more load is to <b>start more machines</b>. Nothing degrades.
+The consequence arrives four weeks later, on the invoice.</p>
+
+<div class="verdict">Both platforms are reliable under growth. <b>They fail in different
+currencies — Fabric in latency and rejected requests, Databricks in money.</b> Which
+failure your organisation can absorb is a better decision input than any benchmark.</div>
+
+<div class="note gold">
+<span class="lbl">The alternative worth steelmanning</span>
+<p>You framed this as either/or. The strongest case against that framing is that
+mirroring an Azure Databricks Unity Catalog into OneLake is generally available and
+copies no data. If that holds, the real decision is not <i>which platform</i> but
+<i>which engine writes the curated tables and which one serves them</i> — and those can
+be different vendors. Section 09 argues that case properly, including where it breaks.</p>
+</div>
+
+<h2 id="what"><span class="num">02</span>What each one actually is</h2>
+
+<div class="plain">
+<span class="t">Microsoft Fabric, in one paragraph</span>
+<p>A single software-as-a-service product that bundles a data lake (OneLake), a Spark
+runtime, a T-SQL warehouse, pipelines, real-time streaming, and Power BI. You buy one
+pool of compute — a capacity — and every workload draws from it. Storage is one lake
+in Delta Parquet format, shared by every engine. Administration and identity are the
+same ones your organisation already uses for Microsoft 365.</p>
+</div>
+
+<div class="plain">
+<span class="t">Databricks, in one paragraph</span>
+<p>A compute and governance platform that runs on cloud storage you already own. You
+create clusters and warehouses, they start, do work, and stop. Unity Catalog governs
+tables, files, models, and permissions across workspaces. Storage stays in your own
+cloud account. The bill is metered against compute consumed, and the cloud provider
+bills the underlying machines separately.</p>
+</div>
+
+<p>The important structural difference is not the feature list. It is <b>who owns the
+storage account</b> and <b>whether compute is pooled or per-job</b>. Everything in the
+rest of this page follows from those two.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Property</th><th>Fabric</th><th>Databricks</th></tr></thead>
+<tbody>
+<tr><td><b>Compute model</b></td><td>One shared pool per capacity, always on until paused</td><td>Clusters and warehouses, started per workload</td></tr>
+<tr><td><b>Billing shape</b></td><td>Fixed per hour of capacity existence</td><td>Variable per hour of compute consumed</td></tr>
+<tr><td><b>Storage owner</b></td><td>Microsoft, inside OneLake</td><td>You, in your own cloud storage account</td></tr>
+<tr><td><b>Table format</b></td><td>Delta Parquet</td><td>Delta Lake, with Iceberg interoperability</td></tr>
+<tr><td><b>Overload behaviour</b></td><td>Throttle: delay, then reject</td><td>Scale out and bill</td></tr>
+<tr><td><b>Cost control lever</b></td><td>Pick the right SKU; pause when idle</td><td>Cluster policies, auto-termination, budgets</td></tr>
+<tr><td><b>Business intelligence</b></td><td>Power BI is inside the product</td><td>Dashboards exist; Power BI usually connects from outside</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="meters"><span class="num">03</span>Two meters, two shapes</h2>
+
+<p>The clearest way to hold these two in your head is to stop comparing features and
+compare the <i>shape</i> of the two bills. One is a rectangle. The other is a
+silhouette of your own workload.</p>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 900 340" role="img" aria-label="Two panels comparing billing shapes. On the left, Fabric: a bar chart of work demanded with a horizontal capacity ceiling that some bars exceed, and a flat payment block below. On the right, Databricks: the same demand bars with no ceiling, and payment bars that follow the demand exactly.">
+<rect x="16" y="16" width="424" height="308" rx="10" fill="var(--surface-2)" stroke="var(--line-2)"/>
+<rect x="460" y="16" width="424" height="308" rx="10" fill="var(--surface-2)" stroke="var(--line-2)"/>
+
+<text x="228" y="42" text-anchor="middle" class="hd">FABRIC · F SKU CAPACITY</text>
+<text x="228" y="62" text-anchor="middle" font-size="13" font-weight="650">You buy a ceiling</text>
+<text x="688" y="42" text-anchor="middle" class="hd">DATABRICKS · DBU METER</text>
+<text x="688" y="62" text-anchor="middle" font-size="13" font-weight="650">You buy a meter</text>
+
+<text x="36" y="90" class="cap">WORK DEMANDED</text>
+<text x="480" y="90" class="cap">WORK DEMANDED</text>
+
+<rect x="64" y="140" width="30" height="30" fill="var(--line-2)"/>
+<rect x="102" y="118" width="30" height="52" fill="var(--line-2)"/>
+<rect x="140" y="96" width="30" height="74" fill="var(--line-2)"/>
+<rect x="178" y="144" width="30" height="26" fill="var(--line-2)"/>
+<rect x="216" y="108" width="30" height="62" fill="var(--line-2)"/>
+<rect x="254" y="100" width="30" height="70" fill="var(--line-2)"/>
+<rect x="292" y="136" width="30" height="34" fill="var(--line-2)"/>
+<rect x="330" y="112" width="30" height="58" fill="var(--line-2)"/>
+<rect x="368" y="126" width="30" height="44" fill="var(--line-2)"/>
+<rect x="406" y="140" width="24" height="30" fill="var(--line-2)"/>
+<path d="M 30 126 L 434 126" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="7 4" fill="none"/>
+<text x="30" y="118" font-size="10" fill="var(--accent)" font-weight="650">F64</text>
+<text x="228" y="192" text-anchor="middle" font-size="11.5" fill="var(--muted)">above the line you get throttled, not a bigger bill</text>
+
+<rect x="484" y="140" width="30" height="30" fill="var(--line-2)"/>
+<rect x="522" y="118" width="30" height="52" fill="var(--line-2)"/>
+<rect x="560" y="96" width="30" height="74" fill="var(--line-2)"/>
+<rect x="598" y="144" width="30" height="26" fill="var(--line-2)"/>
+<rect x="636" y="108" width="30" height="62" fill="var(--line-2)"/>
+<rect x="674" y="100" width="30" height="70" fill="var(--line-2)"/>
+<rect x="712" y="136" width="30" height="34" fill="var(--line-2)"/>
+<rect x="750" y="112" width="30" height="58" fill="var(--line-2)"/>
+<rect x="788" y="126" width="30" height="44" fill="var(--line-2)"/>
+<rect x="826" y="140" width="24" height="30" fill="var(--line-2)"/>
+<text x="688" y="192" text-anchor="middle" font-size="11.5" fill="var(--muted)">no shared ceiling — it scales out and keeps counting</text>
+
+<text x="36" y="222" class="cap">WHAT YOU PAY</text>
+<text x="480" y="222" class="cap">WHAT YOU PAY</text>
+
+<rect x="64" y="238" width="366" height="36" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+<text x="247" y="261" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">flat, every hour, used or not</text>
+
+<rect x="484" y="263" width="30" height="11" fill="var(--teal)"/>
+<rect x="522" y="254" width="30" height="20" fill="var(--teal)"/>
+<rect x="560" y="246" width="30" height="28" fill="var(--teal)"/>
+<rect x="598" y="264" width="30" height="10" fill="var(--teal)"/>
+<rect x="636" y="250" width="30" height="24" fill="var(--teal)"/>
+<rect x="674" y="247" width="30" height="27" fill="var(--teal)"/>
+<rect x="712" y="261" width="30" height="13" fill="var(--teal)"/>
+<rect x="750" y="252" width="30" height="22" fill="var(--teal)"/>
+<rect x="788" y="257" width="30" height="17" fill="var(--teal)"/>
+<rect x="826" y="263" width="24" height="11" fill="var(--teal)"/>
+
+<text x="228" y="302" text-anchor="middle" font-size="11.5" fill="var(--muted)">idle capacity still bills at the full rate</text>
+<text x="688" y="302" text-anchor="middle" font-size="11.5" fill="var(--muted)">idle costs nothing; peaks cost more</text>
+</svg>
+</div>
+<figcaption><b>The two bills have different shapes.</b> Fabric converts a variable
+workload into a fixed cost and a variable service level. Databricks holds the service
+level roughly fixed and lets the cost vary. Neither is better in the abstract; they
+suit different organisations and different budgeting processes.</figcaption>
+</figure>
+
+<div class="note teal">
+<span class="lbl">Why this matters more than it sounds</span>
+<p>A fixed bill is not just a price. It is a <i>forecastable</i> price, and in many
+organisations a forecastable number that is 30% too high beats a variable number that
+averages lower. If your finance function cannot absorb a month that is triple the last
+one, that constraint outranks the arithmetic in section 05.</p>
+</div>
+
+<h2 id="prices"><span class="num">04</span>What the numbers are</h2>
+
+<p>Everything below was read on 2026-09-04 from the Azure retail price API, for the
+<code>eastus</code> region, in US dollars. <b>All of these vary by region</b>, sometimes
+by more than 20%. Quote your own region before anyone signs anything.</p>
+
+<h3>Fabric</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Meter</th><th class="num">Rate</th><th>Note</th></tr></thead>
+<tbody>
+<tr class="hi"><td><b>Fabric capacity, pay-as-you-go</b></td><td class="num">$0.18 / CU-hour</td><td>Billed per second, one-minute minimum</td></tr>
+<tr class="hi"><td><b>Fabric capacity, 1-year reservation</b></td><td class="num">$938.00 / CU-year</td><td>$0.1071 per CU-hour — 40.5% below list</td></tr>
+<tr><td>Fabric capacity, 3-year reservation</td><td class="num">$2,814.00 / CU</td><td>For the whole term: the same $938 a year</td></tr>
+<tr><td>Capacity overage</td><td class="num">$0.54 / CU-hour</td><td>Three times the base rate; opt-in</td></tr>
+<tr><td>OneLake storage — hot</td><td class="num">$0.026 / GB-month</td><td></td></tr>
+<tr><td>OneLake storage — cool</td><td class="num">$0.019 / GB-month</td><td></td></tr>
+<tr><td>OneLake storage — cold</td><td class="num">$0.004 / GB-month</td><td></td></tr>
+<tr><td>OneLake cache</td><td class="num">$0.200 / GB-month</td><td>Roughly eight times hot storage</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Turning the CU rate into SKU prices, at Azure's convention of a 730-hour month:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>SKU</th><th class="num">CU</th><th class="num">Pay-as-you-go / month</th><th class="num">1-year reserved / month</th><th class="num">Spark VCores (burst)</th></tr></thead>
+<tbody>
+<tr><td><b>F2</b></td><td class="num">2</td><td class="num">$262.80</td><td class="num">$156.33</td><td class="num">4 (20)</td></tr>
+<tr><td><b>F8</b></td><td class="num">8</td><td class="num">$1,051.20</td><td class="num">$625.33</td><td class="num">16 (48)</td></tr>
+<tr><td><b>F32</b></td><td class="num">32</td><td class="num">$4,204.80</td><td class="num">$2,501.33</td><td class="num">64 (192)</td></tr>
+<tr class="hi"><td><b>F64</b></td><td class="num">64</td><td class="num">$8,409.60</td><td class="num">$5,002.67</td><td class="num">128 (384)</td></tr>
+<tr><td><b>F256</b></td><td class="num">256</td><td class="num">$33,638.40</td><td class="num">$20,010.67</td><td class="num">512 (1,536)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note warn">
+<span class="lbl">The F64 cliff — the single biggest hidden cost</span>
+<p>Below F64, every person who <i>views</i> Power BI content needs a paid Power BI Pro
+or Premium Per-User licence. At F64 and above, a viewer with a free licence and the
+viewer role can read the content. Microsoft states this directly in its licensing
+documentation.</p>
+<p>So the Fabric cost curve is not smooth. For an organisation with a few hundred
+report readers, the per-viewer licences below F64 can exceed the capacity saving that
+justified staying below it. <b>Model the viewer licences before you model the SKU.</b></p>
+</div>
+
+<h3>Databricks</h3>
+
+<p>Same source, same region, same day. These are the <b>compute rates only</b>. On
+classic compute the virtual machines are billed separately by Azure and are not
+included in any figure on this page.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Compute product</th><th class="num">Standard</th><th class="num">Premium</th></tr></thead>
+<tbody>
+<tr><td>Jobs Light Compute</td><td class="num">$0.07</td><td class="num">$0.22</td></tr>
+<tr class="hi"><td><b>Jobs Compute</b> (classic, batch)</td><td class="num">$0.15</td><td class="num">$0.30</td></tr>
+<tr><td>SQL Analytics (classic)</td><td class="num">$0.22</td><td class="num">$0.22</td></tr>
+<tr><td>All-Purpose Compute (interactive)</td><td class="num">$0.40</td><td class="num">$0.55</td></tr>
+<tr><td>SQL Compute Pro</td><td class="num">—</td><td class="num">$0.55</td></tr>
+<tr class="hi"><td><b>Serverless SQL</b></td><td class="num">—</td><td class="num">$0.70</td></tr>
+<tr><td>Delta Live Tables — Core</td><td class="num">—</td><td class="num">$0.30</td></tr>
+<tr><td>Delta Live Tables — Pro</td><td class="num">—</td><td class="num">$0.38</td></tr>
+<tr><td>Delta Live Tables — Advanced</td><td class="num">—</td><td class="num">$0.54</td></tr>
+<tr><td>Automated serverless compute</td><td class="num">—</td><td class="num">$0.45</td></tr>
+<tr><td>Interactive serverless compute</td><td class="num">—</td><td class="num">$0.95</td></tr>
+<tr><td>Model training</td><td class="num">—</td><td class="num">$0.65</td></tr>
+<tr><td>Enhanced Security and Compliance add-on</td><td class="num">—</td><td class="num">+$0.10</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>All rates are per Databricks unit per hour. Two things in that table decide most
+budgets. First, <b>Premium is roughly double Standard</b> on the batch meter, and most
+regulated organisations end up on Premium for the governance features. Second, the
+spread from the cheapest batch meter to interactive serverless is more than
+thirteen-fold — so <i>which</i> compute product a team habitually reaches for matters
+more than how much data they process with it.</p>
+
+<div class="impl">
+<div class="hd">For the implementer</div>
+<p>The single highest-yield cost control on Databricks is not choosing a smaller
+machine. It is stopping people running scheduled work on All-Purpose Compute because
+that is the cluster already attached to their notebook. At $0.55 against $0.30 that is
+an 83% premium for identical work, and cluster policies can prevent it.</p>
+</div>
+
+<h2 id="breakeven"><span class="num">05</span>The break-even is a duty cycle, not a data volume</h2>
+
+<div class="note">
+<span class="lbl">Read this before the arithmetic</span>
+<p>A capacity unit and a Databricks unit are <b>not comparable units of work</b>. Nobody
+outside the two vendors' engineering teams can tell you how many CU-seconds equal a
+DBU-second, and it would vary by workload if they could. Every cross-platform figure
+below therefore compares <b>bills, not throughput</b>. It tells you what the same money
+buys on each meter. It does not tell you what the same job costs.</p>
+</div>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 900 310" role="img" aria-label="A line chart of monthly cost against how much of a provisioned capacity is used. A flat horizontal line shows the Fabric bill staying constant. A rising diagonal line shows the Databricks bill increasing with use, crossing the flat line at a break-even duty cycle around sixty per cent.">
+<path d="M 90 60 L 90 240 L 840 240" stroke="var(--line-2)" stroke-width="1.5" fill="none"/>
+<text x="26" y="52" class="cap">COST PER MONTH</text>
+
+<path d="M 90 140 L 840 140" stroke="var(--accent)" stroke-width="2.5" fill="none"/>
+<path d="M 90 240 L 840 80" stroke="var(--teal)" stroke-width="2.5" fill="none"/>
+
+<path d="M 559 60 L 559 240" stroke="var(--line-2)" stroke-width="1.5" stroke-dasharray="5 4" fill="none"/>
+<circle cx="559" cy="140" r="5.5" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>
+<text x="559" y="50" text-anchor="middle" font-size="11.5" font-weight="650">break-even</text>
+
+<text x="836" y="70" text-anchor="end" font-size="11.5" fill="var(--teal)" font-weight="650">Databricks — you pay for what ran</text>
+<text x="836" y="160" text-anchor="end" font-size="11.5" fill="var(--accent)" font-weight="650">Fabric — you pay for the ceiling, used or not</text>
+
+<rect x="90" y="252" width="469" height="26" rx="4" fill="var(--teal-soft)"/>
+<rect x="559" y="252" width="281" height="26" rx="4" fill="var(--accent-soft)"/>
+<text x="324" y="269" text-anchor="middle" font-size="11.5" fill="var(--teal)" font-weight="650">the meter is cheaper here</text>
+<text x="700" y="269" text-anchor="middle" font-size="11.5" fill="var(--accent)" font-weight="650">the ceiling is cheaper here</text>
+
+<text x="90" y="298" font-size="10" fill="var(--muted)">idle</text>
+<text x="840" y="298" text-anchor="end" font-size="10" fill="var(--muted)">busy every hour of the month</text>
+</svg>
+</div>
+<figcaption><b>Cost against duty cycle, not against data volume.</b> The horizontal
+axis is the share of the month during which the compute is actually working. The
+crossing point is the only number that matters, and it is a property of your workload,
+not of the platforms. <b>The shape is real; the exact crossing point is illustrative</b>
+— see the arithmetic below for how to find yours.</figcaption>
+</figure>
+
+<h3>Working it out</h3>
+
+<p>Take an F64 on a one-year reservation as the anchor, and ask what the same money
+buys on the Databricks batch meter.</p>
+
+<div class="sum">
+<span class="t">My arithmetic, not Microsoft's and not Databricks'</span>
+<span class="r">F64, 1-year reserved &nbsp;=&nbsp; 64 CU × $938 / 12 &nbsp;=&nbsp; <b>$5,002.67 a month</b></span>
+<span class="r">Same money on Premium Jobs Compute &nbsp;=&nbsp; $5,002.67 ÷ $0.30 &nbsp;=&nbsp; <b>16,676 DBU-hours</b></span>
+<span class="r">Spread across a 730-hour month &nbsp;=&nbsp; <b>22.8 DBU running continuously</b></span>
+<span class="r">Or as nightly batch over 30 nights &nbsp;=&nbsp; <b>556 DBU-hours a night</b></span>
+<span class="r">Minus the virtual machines, which Azure bills separately &nbsp;=&nbsp; <b>less than that</b></span>
+</div>
+
+<p>So the F64 is worth having if — and only if — your workload would consume more than
+about 17,000 DBU-hours a month on Databricks. If it would consume 3,000, the F64 is
+five times too big and you are buying idle hours.</p>
+
+<h3>The cost of idle, stated plainly</h3>
+
+<p>This is the finding that changes the most decisions, and it is arithmetic anyone can
+check.</p>
+
+<div class="sum">
+<span class="t">What an unused capacity unit really costs</span>
+<span class="r">F2, 1-year reserved &nbsp;=&nbsp; <b>$156.33 a month</b> for 2 CU × 730 h = 1,460 CU-hours</span>
+<span class="r">If you use all of it &nbsp;→&nbsp; a CU-hour costs <b>$0.107</b></span>
+<span class="r">If you use a tenth of it &nbsp;→&nbsp; the same CU-hour costs <b>$1.07</b></span>
+<span class="r">If you use a twentieth &nbsp;→&nbsp; <b>$2.14</b> — twenty times list</span>
+</div>
+
+<div class="verdict"><b>Idle capacity is the largest single cost on Fabric, and it never
+appears as a line on the invoice.</b> It appears as a rate you are paying without
+noticing, because the invoice total does not move.</div>
+
+<p>Databricks has the mirror-image failure, and it is just as easy to miss: a cluster
+left running with auto-termination disabled bills at the full rate while nobody uses
+it. The difference is that Databricks makes that visible — the cost goes up — whereas
+on Fabric the cost stays exactly the same and the waste hides inside it.</p>
+
+<h2 id="growth"><span class="num">06</span>What happens when the data grows</h2>
+
+<h3>Fabric: bursting, smoothing, then a staged throttle</h3>
+
+<p>Fabric does two generous things before it does a strict one. <b>Bursting</b> lets an
+operation temporarily use more compute than the SKU provides. <b>Smoothing</b> then
+spreads that consumption forward in time so the burst does not trigger a throttle:
+interactive operations are smoothed over five to sixty-four minutes, background
+operations over a full 24 hours. Fabric's own worked example notes that a background
+job consuming six times the compute available in the next ten minutes still does not
+throttle an F2, because the cost is spread across 2,880 half-minute timepoints.</p>
+
+<p>When that runs out, the throttle arrives in published stages.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Future capacity consumed</th><th>Stage</th><th>What a user sees</th></tr></thead>
+<tbody>
+<tr><td>Up to 10 minutes</td><td>Overage protection</td><td>Nothing. The spike is absorbed.</td></tr>
+<tr><td>10 to 60 minutes</td><td>Interactive delay</td><td>Every interactive request waits 20 seconds before it starts.</td></tr>
+<tr class="hi"><td>60 minutes to 24 hours</td><td><b>Interactive rejection</b></td><td>Interactive requests are refused. Background jobs still run.</td></tr>
+<tr><td>Over 24 hours</td><td><b>Background rejection</b></td><td>Everything is refused until the debt is paid down.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Two details matter operationally and are easy to miss:</p>
+
+<ul>
+<li><b>Work already running is never throttled.</b> Only requests submitted after
+throttling begins are affected. Long jobs complete.</li>
+<li><b>A throttled capacity rejects new Spark jobs rather than queueing them.</b>
+Normally Spark jobs from pipelines and schedulers queue, first-in-first-out, and retry
+automatically — with a 24-hour queue expiry. In a throttled state that safety net is
+gone.</li>
+</ul>
+
+<p>The error text is worth memorising, because it is what a data engineer will paste
+into a chat at 03:00: <code>CapacityLimitExceeded</code>, and for Spark specifically
+<code>HTTP 430 TooManyRequestsForCapacity</code>.</p>
+
+<div class="impl">
+<div class="hd">For the implementer</div>
+<p>Concurrency on Fabric Spark is core-based, not job-count-based. One capacity unit
+maps to two Spark VCores, and bursting allows up to three times the purchased VCores.
+An F64 therefore provides 128 VCores, bursting to 384, with a queue limit of 64. If the
+pool is configured for all 384, a single job can take the lot — which is why
+capacity admins can disable job-level bursting on shared capacities to stop one
+notebook starving everyone else.</p>
+</div>
+
+<h3>Databricks: it scales, and it bills</h3>
+
+<p>There is no equivalent shared ceiling. Clusters autoscale within the bounds you set;
+serverless products provision on demand. As data grows, jobs take longer or clusters
+grow wider, and the DBU count rises accordingly.</p>
+
+<p>That is a genuine reliability advantage — and it is also why Databricks cost
+governance is a discipline rather than a setting. The controls are cluster policies,
+auto-termination, and budget alerts, and every one of them is something an
+administrator has to actively configure. <i>Nothing stops an expensive query by
+default.</i></p>
+
+<div class="note violet">
+<span class="lbl">The honest summary of section 06</span>
+<p>Fabric gives you a hard spending ceiling and a soft service level. Databricks gives
+you a hard service level and a soft spending ceiling. Growth does not break either
+platform — it moves along whichever of those two axes the platform left soft.</p>
+</div>
+
+<h2 id="proscons"><span class="num">07</span>Pros and cons, plainly</h2>
+
+<div class="pc">
+<div class="fab">
+<h4>Microsoft Fabric</h4>
+<div class="who">One product, one bill, one meter</div>
+<span class="g">In its favour</span>
+<ul>
+<li>The bill is knowable a year ahead. For many finance functions that alone decides it.</li>
+<li>Power BI is not integrated — it is the same product. Direct Lake removes the import-refresh cycle entirely.</li>
+<li>Identity, tenant policy, sensitivity labels and audit are the ones your organisation already runs.</li>
+<li>One storage layer in open Delta Parquet, readable by every engine including engines outside Fabric.</li>
+<li>Low floor: an F2 reserved is $156.33 a month, so a proof of concept is genuinely cheap to start.</li>
+<li>Analysts and report authors need no new tooling, no cluster concepts, and no new login.</li>
+</ul>
+<span class="g b">Against it</span>
+<ul>
+<li>Idle capacity bills at the full rate. A lightly used capacity can cost ten times list per unit of work.</li>
+<li>Every workload shares one pool. A runaway notebook can throttle the executive dashboard.</li>
+<li>The F64 licensing cliff makes the cost curve step, not slope.</li>
+<li>Right-sizing is a recurring management chore, not a one-time decision.</li>
+<li>Fewer escape hatches for advanced machine learning and bespoke runtime work.</li>
+<li>Rapid product change: preview features and consumption rates move faster than most governance processes.</li>
+</ul>
+</div>
+<div class="dbx">
+<h4>Databricks</h4>
+<div class="who">Compute you start, governance you configure</div>
+<span class="g">In its favour</span>
+<ul>
+<li>You pay for work done. Idle costs nothing when auto-termination is on.</li>
+<li>No shared ceiling, so one team's batch job cannot reject another team's query.</li>
+<li>Strong ground for machine learning, streaming and large-scale engineering — this is the platform's origin.</li>
+<li>Storage stays in your own cloud account, which simplifies some data-residency and exit arguments.</li>
+<li>Unity Catalog governs tables, files, and models under one permission model across workspaces.</li>
+<li>Runs on more than one cloud, which matters if multi-cloud is a real constraint rather than a slide.</li>
+</ul>
+<span class="g b">Against it</span>
+<ul>
+<li>The bill is variable and can surprise. Nothing stops an expensive query by default.</li>
+<li>Two bills, not one: Databricks units plus the cloud provider's machines.</li>
+<li>Premium tier roughly doubles the batch rate, and regulated organisations usually need it.</li>
+<li>Business-intelligence serving for a large audience normally still means Power BI, and therefore a second product and a second licence.</li>
+<li>Cost discipline requires active administration — cluster policies, budgets, and someone whose job it is.</li>
+<li>Steeper skills floor. Analysts need more platform concepts before they are productive.</li>
+</ul>
+</div>
+</div>
+
+<h2 id="decide"><span class="num">08</span>Choosing</h2>
+
+<p>Four questions, asked in this order. The order is the point: the first one that
+returns a clear yes should settle it, because it is the one with the largest financial
+consequence.</p>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 900 520" role="img" aria-label="A decision flowchart with four questions asked in sequence. Answering yes to any question routes to a recommended platform on the right; answering no falls through to the next question. The final box says either platform works and the choice should follow existing skills.">
+<rect x="310" y="16" width="240" height="40" rx="7" fill="var(--surface-2)" stroke="var(--line-2)"/>
+<text x="430" y="41" text-anchor="middle" font-size="13" font-weight="650">A workload needs a home</text>
+<path d="M 430 56 L 430 80" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
+
+<rect x="230" y="80" width="400" height="58" rx="7" fill="var(--surface)" stroke="var(--line-2)"/>
+<text x="430" y="105" text-anchor="middle" font-size="13" font-weight="650">Will the compute run near-continuously?</text>
+<text x="430" y="124" text-anchor="middle" font-size="11" fill="var(--muted)">busy most working hours, most days</text>
+<path d="M 630 109 L 668 109" stroke="var(--accent)" stroke-width="1.8" fill="none"/>
+<text x="649" y="102" text-anchor="middle" font-size="9" fill="var(--accent)" class="mono">YES</text>
+<rect x="670" y="88" width="212" height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/>
+<text x="776" y="114" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">Fabric capacity</text>
+<path d="M 430 138 L 430 170" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
+<text x="446" y="158" text-anchor="middle" font-size="9" fill="var(--muted)" class="mono">NO</text>
+
+<rect x="230" y="170" width="400" height="58" rx="7" fill="var(--surface)" stroke="var(--line-2)"/>
+<text x="430" y="195" text-anchor="middle" font-size="13" font-weight="650">Is Power BI the main way people consume it?</text>
+<text x="430" y="214" text-anchor="middle" font-size="11" fill="var(--muted)">hundreds of report readers, not dozens</text>
+<path d="M 630 199 L 668 199" stroke="var(--accent)" stroke-width="1.8" fill="none"/>
+<text x="649" y="192" text-anchor="middle" font-size="9" fill="var(--accent)" class="mono">YES</text>
+<rect x="670" y="178" width="212" height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/>
+<text x="776" y="197" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">Fabric, F64 or larger</text>
+<text x="776" y="212" text-anchor="middle" font-size="10" fill="var(--accent)">free viewing pays for itself</text>
+<path d="M 430 228 L 430 260" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
+<text x="446" y="248" text-anchor="middle" font-size="9" fill="var(--muted)" class="mono">NO</text>
+
+<rect x="230" y="260" width="400" height="58" rx="7" fill="var(--surface)" stroke="var(--line-2)"/>
+<text x="430" y="285" text-anchor="middle" font-size="13" font-weight="650">Machine learning, streaming or heavy Spark?</text>
+<text x="430" y="304" text-anchor="middle" font-size="11" fill="var(--muted)">as the core of the work, not as a side task</text>
+<path d="M 630 289 L 668 289" stroke="var(--teal)" stroke-width="1.8" fill="none"/>
+<text x="649" y="282" text-anchor="middle" font-size="9" fill="var(--teal)" class="mono">YES</text>
+<rect x="670" y="268" width="212" height="42" rx="7" fill="var(--teal-soft)" stroke="var(--teal)"/>
+<text x="776" y="294" text-anchor="middle" font-size="12.5" fill="var(--teal)" font-weight="650">Databricks</text>
+<path d="M 430 318 L 430 350" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
+<text x="446" y="338" text-anchor="middle" font-size="9" fill="var(--muted)" class="mono">NO</text>
+
+<rect x="230" y="350" width="400" height="58" rx="7" fill="var(--surface)" stroke="var(--line-2)"/>
+<text x="430" y="375" text-anchor="middle" font-size="13" font-weight="650">Is the load bursty and hard to predict?</text>
+<text x="430" y="394" text-anchor="middle" font-size="11" fill="var(--muted)">quiet for days, then very large for hours</text>
+<path d="M 630 379 L 668 379" stroke="var(--teal)" stroke-width="1.8" fill="none"/>
+<text x="649" y="372" text-anchor="middle" font-size="9" fill="var(--teal)" class="mono">YES</text>
+<rect x="670" y="358" width="212" height="42" rx="7" fill="var(--teal-soft)" stroke="var(--teal)"/>
+<text x="776" y="377" text-anchor="middle" font-size="12.5" fill="var(--teal)" font-weight="650">Databricks, or</text>
+<text x="776" y="392" text-anchor="middle" font-size="11" fill="var(--teal)">Fabric on-demand Spark</text>
+<path d="M 430 408 L 430 440" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
+<text x="446" y="428" text-anchor="middle" font-size="9" fill="var(--muted)" class="mono">NO</text>
+
+<rect x="230" y="440" width="400" height="56" rx="7" fill="var(--surface-2)" stroke="var(--ink-2)"/>
+<text x="430" y="464" text-anchor="middle" font-size="13" font-weight="650">Either works. Choose on the skills you have.</text>
+<text x="430" y="483" text-anchor="middle" font-size="11" fill="var(--muted)">the platform you can staff beats the one that benchmarks better</text>
+</svg>
+</div>
+<figcaption><b>The order encodes the finding.</b> Duty cycle is asked first because it
+carries the largest cost consequence; the Power BI audience question is second because
+the F64 licensing threshold can swamp every other number. Workload character is asked
+third — not because it is unimportant, but because it changes the bill less often than
+people expect.</figcaption>
+</figure>
+
+<div class="note gold">
+<span class="lbl">The last box is not a cop-out</span>
+<p>If you reach the bottom, the platforms genuinely are close enough that the deciding
+factor is which one your team can operate on a bad day. A well-run Fabric estate beats
+a badly-run Databricks estate and the reverse is equally true. Hiring and existing
+skills are a legitimate technical input, not a soft one.</p>
+</div>
+
+<h2 id="both"><span class="num">09</span>The option you did not ask about</h2>
+
+<p>The either/or framing is worth attacking, because the strongest structural argument
+in this whole comparison is that you may not have to choose.</p>
+
+<p>Mirroring an Azure Databricks Unity Catalog into Fabric is <span class="pill ga">generally
+available</span>. Microsoft's own documentation is unusually plain about the mechanics:
+<i>&ldquo;there is no data movement or data replication. Only the Azure Databricks
+catalog structure is mirrored to Fabric and the underlying catalog data is accessed
+through shortcuts.&rdquo;</i> Fabric creates a read-only T-SQL analytics endpoint over
+it, and Power BI can query it in Direct Lake mode.</p>
+
+<p>The reverse direction is being built too. Databricks has published support for
+reading OneLake data through Unity Catalog federation, again read-only and without
+copying, with write support described as still under development.</p>
+
+<p>So the architecture that dissolves the question looks like this: <b>Databricks
+engineers the curated tables; Fabric serves them to the business.</b> Each engine does
+what it is strongest at, and no gigabyte is copied to make it work.</p>
+
+<h3>Where that argument breaks</h3>
+
+<p>I would not present it without these four caveats, all of which are documented
+limits rather than opinions.</p>
+
+<ul>
+<li><b>It is one-directional today.</b> Fabric reads Databricks tables. Databricks
+writing directly into OneLake is not there yet. Your write path still has to live on
+one side.</li>
+<li><b>Not everything mirrors.</b> Materialized views and streaming tables are not
+shown, and external tables that are not in Delta format are not shown either. If your
+gold layer leans on those, the seam leaks.</li>
+<li><b>It is not instant.</b> Microsoft states propagation takes anywhere from a few
+seconds to several minutes. That is fine for reporting and wrong for anything
+operational.</li>
+<li><b>You still pay both bills.</b> Zero-copy removes the storage duplication and the
+pipeline, not the two platform subscriptions. This is an architecture argument, not a
+cost-saving one.</li>
+</ul>
+
+<div class="verdict">Run both only if you have a real reason for both — genuine machine
+learning work <i>and</i> a large Power BI audience. <b>Two platforms because nobody would
+decide is the most expensive outcome on this page.</b></div>
+
+<h2 id="wrong"><span class="num">10</span>Where this could be wrong</h2>
+
+<p>The parts of this comparison most likely to fail under scrutiny, listed so you can
+attack them first.</p>
+
+<ul>
+<li><b>The prices are one region on one day.</b> Everything came from
+<code>eastus</code> on 2026-09-04 and all of it varies by region. Regional spreads on
+Azure are routinely more than 20%.</li>
+<li><b>List prices are not what large customers pay.</b> Databricks committed-use
+discounts are not public, and Microsoft enterprise agreements are negotiated. Every
+Databricks figure here is undiscounted; the Fabric reservation discount is public and
+is included. That asymmetry flatters Fabric.</li>
+<li><b>Capacity units and Databricks units are not commensurable.</b> Section 05 says
+this outright, but it bears repeating: I have compared bills, not work. A real answer
+needs your workload benchmarked on both, which nobody wants to fund.</li>
+<li><b>The clean &ldquo;ceiling versus meter&rdquo; split is eroding.</b> Fabric now
+offers on-demand billing for Spark, where jobs run on separate serverless resources,
+consume no capacity units from the capacity, and are billed pay-as-you-go. Bursting and
+smoothing do not apply in that mode. That is a meter inside Fabric, and it weakens the
+tidiest argument on this page.</li>
+<li><b>I have run no benchmarks.</b> Every performance statement here is drawn from
+documented limits — VCore counts, burst factors, concurrency ceilings — not from
+measurement.</li>
+<li><b>The Databricks side is characterised from fewer first-party pages than the
+Fabric side.</b> Microsoft's throttling and licensing documentation is exceptionally
+detailed and public. The Databricks equivalents are thinner in public, so the Fabric
+half of this comparison is better evidenced than the Databricks half. Weigh
+accordingly.</li>
+</ul>
+
+<h2 id="sources"><span class="num">11</span>Sources</h2>
+
+<div class="deeper">
+<div class="t">Everything quoted above, in the order it was used</div>
+<ul>
+<li><span class="src">Azure</span> Retail Prices API — the source of every dollar figure
+on this page —
+<a href="https://prices.azure.com/api/retail/prices">prices.azure.com/api/retail/prices</a>,
+filtered to <code>Microsoft Fabric</code> and <code>Azure Databricks</code> in
+<code>eastus</code>.</li>
+<li><span class="src">Microsoft</span> Understand Microsoft Fabric licenses and capacity
+— the SKU table, and the F64 free-viewing threshold —
+<a href="https://learn.microsoft.com/en-us/fabric/enterprise/licenses">learn.microsoft.com/fabric/enterprise/licenses</a></li>
+<li><span class="src">Microsoft</span> Understand capacity throttling and smoothing —
+the four throttling stages, the smoothing windows, and the F2 worked example —
+<a href="https://learn.microsoft.com/en-us/fabric/enterprise/throttling">learn.microsoft.com/fabric/enterprise/throttling</a></li>
+<li><span class="src">Microsoft</span> Concurrency limits and queueing in Apache Spark
+for Fabric — VCores per capacity unit, the 3× burst factor, queue limits, and the
+<code>HTTP 430</code> error —
+<a href="https://learn.microsoft.com/en-us/fabric/data-engineering/spark-job-concurrency-and-queueing">learn.microsoft.com/fabric/data-engineering/spark-job-concurrency-and-queueing</a></li>
+<li><span class="src">Microsoft</span> On-demand billing for Apache Spark in Microsoft
+Fabric — the pay-as-you-go Spark mode cited in section 10 —
+<a href="https://learn.microsoft.com/en-us/fabric/data-engineering/autoscale-billing-for-spark-overview">learn.microsoft.com/fabric/data-engineering/autoscale-billing-for-spark-overview</a></li>
+<li><span class="src">Microsoft</span> Microsoft Fabric mirrored catalog from Azure
+Databricks — the no-data-movement quote and the mirroring limitations —
+<a href="https://learn.microsoft.com/en-us/fabric/mirroring/azure-databricks">learn.microsoft.com/fabric/mirroring/azure-databricks</a></li>
+<li><span class="src">Databricks</span> Expanding support for OneLake in Unity Catalog
+— the read-only direction and the pending write support —
+<a href="https://www.databricks.com/blog/expanding-support-onelake-unity-catalog">databricks.com/blog/expanding-support-onelake-unity-catalog</a></li>
+<li><span class="src">Microsoft</span> Enable OneLake catalog federation in Azure
+Databricks — the reverse-direction mechanics —
+<a href="https://learn.microsoft.com/en-us/azure/databricks/query-federation/onelake">learn.microsoft.com/azure/databricks/query-federation/onelake</a></li>
+</ul>
+</div>
+
+<footer>
+<p><b>What this page is.</b> A comparison written to be argued with, not a
+recommendation to adopt anything. Every vendor claim above is quoted or paraphrased
+from a page linked in section 11. Every calculation is labelled as mine and shown in
+full so it can be checked line by line. Where a statement is a judgement rather than a
+source, it is written as one.</p>
+<p><b>Verified 2026-09-04, prices from <code>eastus</code> in US dollars.</b> Rates,
+regional pricing, preview status and product names all change. Re-read section 10
+before quoting anything here in a decision document.</p>
+</footer>
+
+</div>
+
+</body>
+</html>

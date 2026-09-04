@@ -10,6 +10,12 @@ Fabric against Claude Code: the compliance boundary, the capacity-unit meter, pr
 and a routing rule. It opens by separating the three different products people call
 "Copilot on Fabric", two of which sit outside the boundary.
 
+**Fabric or Databricks? →** https://priya-bi.github.io/claude-surfaces/fabric-vs-databricks/ — the platform
+question underneath all of the above. Neither meter measures your data, so "which handles
+large data better" has no answer; what sets the bill is duty cycle. First-party prices
+straight from the Azure retail price API, Fabric's four throttling stages, a break-even
+calculation you can check line by line, and a four-question decision tree.
+
 A comparison of Anthropic's two agentic surfaces — **Claude Code** and **Claude
 Cowork** — on cost, security and governance, plus the two ways an agent reaches
 **Microsoft Fabric** from a developer machine (an MCP server, or the `fab` CLI).
@@ -77,6 +83,8 @@ reintroduces one fails the check rather than shipping.
 | `claudecode-vs-cowork.html` | **Source of the excerpt** — the first four sections, renumbered 01–04, plus a condensed who-gets-what recommendation, with its own front matter. Same Artifact page form. |
 | `index.html` | **Generated.** What GitHub Pages serves at the site root: the full source wrapped in a real HTML document. Produced by `build_page.py`; don't hand-edit. |
 | `claudecode-vs-cowork/index.html` | **Generated.** The excerpt, served at `/claudecode-vs-cowork/`. Same generator; don't hand-edit. |
+| `claude-code-vs-copilot.html` | **Source of the Copilot comparison**, served at `/claudecode-vs-copilot/`. Same Artifact page form. |
+| `fabric-vs-databricks.html` | **Source of the platform comparison**, served at `/fabric-vs-databricks/`. Prices read from the Azure retail price API on 2026-09-04, `eastus`, USD. Same Artifact page form. |
 | `claude-code-vs-cowork.md` | The same argument in prose, readable on GitHub. |
 | `claude-surfaces-research.md` | **The facts basis.** Numbered, dated sources — `[1P]` first-party, `[3P]` third-party, `UNVERIFIED` where a claim rests on third-party sources only. Start here if you want to check a number. |
 | `check_page.py` | Static checks for a source page. Run it against each source. |

@@ -52,6 +52,13 @@ PAGES = [
         "machine: the compliance boundary, the capacity-unit meter, pros and cons, and a "
         "routing rule for deciding which tool a task belongs to.",
     ),
+    (
+        Path("fabric-vs-databricks.html"),
+        Path("fabric-vs-databricks/index.html"),
+        "Microsoft Fabric and Databricks compared on the thing that actually sets the "
+        "bill: duty cycle, not data volume. First-party prices from the Azure retail "
+        "price API, the throttling stages, a break-even calculation, and a decision tree.",
+    ),
 ]
 
 
