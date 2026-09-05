@@ -200,7 +200,7 @@ footer b{color:var(--ink-2)}
 
 <header>
 <div class="inner">
-<p class="eyebrow">Platform choice · verified 2026-09-04</p>
+<p class="eyebrow">Platform choice · verified 2026-09-05</p>
 <h1>Fabric or Databricks</h1>
 <p class="standfirst">The question is normally asked as &ldquo;which one handles large
 data better?&rdquo; That question has no answer, because neither meter measures your
@@ -209,8 +209,8 @@ compute is busy, and what each platform does when it is busier than you paid for
 <p class="lead">Written for the person who has to defend a platform decision in a
 steering meeting, and needs arithmetic rather than a preference.</p>
 <div class="meta">
-<span><b>Verified</b> 2026-09-04</span>
-<span><b>Prices</b> Azure retail price API, East US, USD</span>
+<span><b>Verified</b> 2026-09-05</span>
+<span><b>Prices</b> Azure retail price API, Sweden Central, SEK</span>
 <span><b>Sources</b> first-party only</span>
 <span><b>Shelf life</b> short — see section 11</span>
 </div>
@@ -254,7 +254,7 @@ counts how long a cluster ran and how big it was. It does not read your row coun
 either.</p>
 
 <p>Data volume reaches the bill only twice, and both are small compared with compute.
-Storage is charged per gigabyte-month — $0.026 in OneLake hot storage. And bigger data
+Storage is charged per gigabyte-month — 0.219 SEK in OneLake hot storage. And bigger data
 takes longer to scan, so jobs run longer. That second effect is real, but it is
 mediated: what you pay for is the extra <i>minutes</i>, not the extra bytes.</p>
 
@@ -409,41 +409,85 @@ one, that constraint outranks the arithmetic in section 05.</p>
 
 <h2 id="prices"><span class="num">04</span>What the numbers are</h2>
 
-<p>Everything below was read on 2026-09-04 from the Azure retail price API, for the
-<code>eastus</code> region, in US dollars. <b>All of these vary by region</b>, sometimes
-by more than 20%. Quote your own region before anyone signs anything.</p>
+<p>Everything below was read on 2026-09-05 from the Azure retail price API, for the
+<code>swedencentral</code> region, in Swedish kronor. These are <b>Microsoft's own SEK
+list prices</b>, requested with <code>currencyCode=SEK</code> — not dollar figures with an
+exchange rate applied. That distinction matters, because Azure sets its currency list
+prices independently rather than tracking a daily rate.</p>
+
+<p><b>These vary by region, and not by a little.</b> The same Fabric capacity reservation
+costs 9,424.01 SEK per capacity unit a year in Sweden Central and North Europe, but
+<b>10,909.00 in West Europe — 15.8% more for identical compute</b>. Databricks unit rates,
+by contrast, are identical across all three. So regional exposure is a Fabric problem
+rather than a Databricks one: with Fabric the capacity <i>is</i> the price, whereas
+Databricks moves only with the virtual machines underneath it.</p>
 
 <h3>Fabric</h3>
 
 <div class="tw">
 <table>
-<thead><tr><th>Meter</th><th class="num">Rate</th><th>Note</th></tr></thead>
+<thead><tr><th>Meter</th><th class="num">Rate, SEK</th><th>Note</th></tr></thead>
 <tbody>
-<tr class="hi"><td><b>Fabric capacity, pay-as-you-go</b></td><td class="num">$0.18 / CU-hour</td><td>Billed per second, one-minute minimum</td></tr>
-<tr class="hi"><td><b>Fabric capacity, 1-year reservation</b></td><td class="num">$938.00 / CU-year</td><td>$0.1071 per CU-hour — 40.5% below list</td></tr>
-<tr><td>Fabric capacity, 3-year reservation</td><td class="num">$2,814.00 / CU</td><td>For the whole term: the same $938 a year</td></tr>
-<tr><td>Capacity overage</td><td class="num">$0.54 / CU-hour</td><td>Three times the base rate; opt-in</td></tr>
-<tr><td>OneLake storage — hot</td><td class="num">$0.026 / GB-month</td><td></td></tr>
-<tr><td>OneLake storage — cool</td><td class="num">$0.019 / GB-month</td><td></td></tr>
-<tr><td>OneLake storage — cold</td><td class="num">$0.004 / GB-month</td><td></td></tr>
-<tr><td>OneLake cache</td><td class="num">$0.200 / GB-month</td><td>Roughly eight times hot storage</td></tr>
+<tr class="hi"><td><b>Fabric capacity, pay-as-you-go</b></td><td class="num">1.8086 / CU-hour</td><td>Billed per second, one-minute minimum</td></tr>
+<tr class="hi"><td><b>Fabric capacity, 1-year reservation</b></td><td class="num">9,424.008 / CU-year</td><td>1.0758 per CU-hour — 40.5% below list</td></tr>
+<tr><td>Fabric capacity, 3-year reservation</td><td class="num">28,272.024 / CU</td><td>For the whole term: the same 9,424.008 a year</td></tr>
+<tr><td>Capacity overage</td><td class="num">5.4259 / CU-hour</td><td>Three times the base rate; opt-in</td></tr>
+<tr><td>OneLake storage — hot</td><td class="num">0.2189 / GB-month</td><td></td></tr>
+<tr><td>OneLake storage — cool</td><td class="num">0.1190 / GB-month</td><td></td></tr>
+<tr><td>OneLake storage — cold</td><td class="num">0.0381 / GB-month</td><td></td></tr>
+<tr><td>OneLake cache</td><td class="num">2.4750 / GB-month</td><td>Eleven times hot storage</td></tr>
 </tbody>
 </table>
 </div>
 
-<p>Turning the CU rate into SKU prices, at Azure's convention of a 730-hour month:</p>
+<p>Turning the CU rate into SKU prices, at Azure's convention of a 730-hour month. All
+figures in SEK:</p>
 
 <div class="tw">
 <table>
 <thead><tr><th>SKU</th><th class="num">CU</th><th class="num">Pay-as-you-go / month</th><th class="num">1-year reserved / month</th><th class="num">Spark VCores (burst)</th></tr></thead>
 <tbody>
-<tr><td><b>F2</b></td><td class="num">2</td><td class="num">$262.80</td><td class="num">$156.33</td><td class="num">4 (20)</td></tr>
-<tr><td><b>F8</b></td><td class="num">8</td><td class="num">$1,051.20</td><td class="num">$625.33</td><td class="num">16 (48)</td></tr>
-<tr><td><b>F32</b></td><td class="num">32</td><td class="num">$4,204.80</td><td class="num">$2,501.33</td><td class="num">64 (192)</td></tr>
-<tr class="hi"><td><b>F64</b></td><td class="num">64</td><td class="num">$8,409.60</td><td class="num">$5,002.67</td><td class="num">128 (384)</td></tr>
-<tr><td><b>F256</b></td><td class="num">256</td><td class="num">$33,638.40</td><td class="num">$20,010.67</td><td class="num">512 (1,536)</td></tr>
+<tr><td><b>F2</b></td><td class="num">2</td><td class="num">2,640.56</td><td class="num">1,570.67</td><td class="num">4 (20)</td></tr>
+<tr><td><b>F8</b></td><td class="num">8</td><td class="num">10,562.22</td><td class="num">6,282.67</td><td class="num">16 (48)</td></tr>
+<tr class="hi"><td><b>F16</b></td><td class="num">16</td><td class="num">21,124.45</td><td class="num">12,565.34</td><td class="num">32 (96)</td></tr>
+<tr><td><b>F32</b></td><td class="num">32</td><td class="num">42,248.90</td><td class="num">25,130.69</td><td class="num">64 (192)</td></tr>
+<tr class="hi"><td><b>F64</b></td><td class="num">64</td><td class="num">84,497.79</td><td class="num">50,261.38</td><td class="num">128 (384)</td></tr>
+<tr><td><b>F256</b></td><td class="num">256</td><td class="num">337,991.17</td><td class="num">201,045.50</td><td class="num">512 (1,536)</td></tr>
 </tbody>
 </table>
+</div>
+
+<h3>What a one-year reservation actually costs</h3>
+
+<p>The monthly column above is a division, not a bill. A Fabric reservation is bought
+<b>per capacity unit per year</b> and committed for the term, so the number that goes on a
+purchase order is the annual one.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>SKU</th><th class="num">Reserved, year one</th><th class="num">Pay-as-you-go, same year</th><th class="num">Committing saves</th></tr></thead>
+<tbody>
+<tr><td><b>F8</b></td><td class="num">75,392.06</td><td class="num">126,746.69</td><td class="num">51,354.63</td></tr>
+<tr class="hi"><td><b>F16</b></td><td class="num">150,784.13</td><td class="num">253,493.38</td><td class="num">102,709.25</td></tr>
+<tr><td><b>F32</b></td><td class="num">301,568.26</td><td class="num">506,986.75</td><td class="num">205,418.49</td></tr>
+<tr class="hi"><td><b>F64</b></td><td class="num">603,136.51</td><td class="num">1,013,973.50</td><td class="num">410,836.99</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>All in SEK, and the saving is 40.5% in every row — the discount is a flat rate, not a
+volume tier.</p>
+
+<div class="note teal">
+<span class="lbl">Two things about the reservation that are easy to miss</span>
+<p><b>Three years buys no extra discount.</b> The three-year reservation is 28,272.024 SEK
+per capacity unit, which is exactly three times the one-year price of 9,424.008. You are
+committing for longer at the same annual rate. Most Azure reservations pay you for the
+longer lock; this one does not, so there is no pricing reason to choose it over the
+one-year term.</p>
+<p><b>The discount is on committed spend, not on consumption.</b> Reserving an over-sized
+capacity is the idle-capacity trap from section 05 with twelve months of lock-in attached.
+Size it first, reserve it second.</p>
 </div>
 
 <div class="note warn">
@@ -465,26 +509,26 @@ included in any figure on this page.</p>
 
 <div class="tw">
 <table>
-<thead><tr><th>Compute product</th><th class="num">Standard</th><th class="num">Premium</th></tr></thead>
+<thead><tr><th>Compute product</th><th class="num">Standard, SEK</th><th class="num">Premium, SEK</th></tr></thead>
 <tbody>
-<tr><td>Jobs Light Compute</td><td class="num">$0.07</td><td class="num">$0.22</td></tr>
-<tr class="hi"><td><b>Jobs Compute</b> (classic, batch)</td><td class="num">$0.15</td><td class="num">$0.30</td></tr>
-<tr><td>SQL Analytics (classic)</td><td class="num">$0.22</td><td class="num">$0.22</td></tr>
-<tr><td>All-Purpose Compute (interactive)</td><td class="num">$0.40</td><td class="num">$0.55</td></tr>
-<tr><td>SQL Compute Pro</td><td class="num">—</td><td class="num">$0.55</td></tr>
-<tr class="hi"><td><b>Serverless SQL</b></td><td class="num">—</td><td class="num">$0.70</td></tr>
-<tr><td>Delta Live Tables — Core</td><td class="num">—</td><td class="num">$0.30</td></tr>
-<tr><td>Delta Live Tables — Pro</td><td class="num">—</td><td class="num">$0.38</td></tr>
-<tr><td>Delta Live Tables — Advanced</td><td class="num">—</td><td class="num">$0.54</td></tr>
-<tr><td>Automated serverless compute</td><td class="num">—</td><td class="num">$0.45</td></tr>
-<tr><td>Interactive serverless compute</td><td class="num">—</td><td class="num">$0.95</td></tr>
-<tr><td>Model training</td><td class="num">—</td><td class="num">$0.65</td></tr>
-<tr><td>Enhanced Security and Compliance add-on</td><td class="num">—</td><td class="num">+$0.10</td></tr>
+<tr><td>Jobs Light Compute</td><td class="num">0.6663</td><td class="num">2.0942</td></tr>
+<tr class="hi"><td><b>Jobs Compute</b> (classic, batch)</td><td class="num">1.4279</td><td class="num">2.8558</td></tr>
+<tr><td>SQL Analytics (classic)</td><td class="num">2.0942</td><td class="num">2.0942</td></tr>
+<tr><td>All-Purpose Compute (interactive)</td><td class="num">3.8077</td><td class="num">5.2356</td></tr>
+<tr><td>SQL Compute Pro</td><td class="num">—</td><td class="num">6.8538</td></tr>
+<tr class="hi"><td><b>Serverless SQL</b></td><td class="num">—</td><td class="num">8.6625</td></tr>
+<tr><td>Delta Live Tables — Core</td><td class="num">—</td><td class="num">2.8558</td></tr>
+<tr><td>Delta Live Tables — Pro</td><td class="num">—</td><td class="num">3.6173</td></tr>
+<tr><td>Delta Live Tables — Advanced</td><td class="num">—</td><td class="num">5.1404</td></tr>
+<tr><td>Automated serverless compute</td><td class="num">—</td><td class="num">4.4740</td></tr>
+<tr><td>Interactive serverless compute</td><td class="num">—</td><td class="num">9.0432</td></tr>
+<tr><td>Model training</td><td class="num">—</td><td class="num">7.4250</td></tr>
+<tr><td>Enhanced Security and Compliance add-on</td><td class="num">—</td><td class="num">+0.9519</td></tr>
 </tbody>
 </table>
 </div>
 
-<p>All rates are per Databricks unit per hour. Two things in that table decide most
+<p>All rates are per Databricks unit per hour, in SEK. Two things in that table decide most
 budgets. First, <b>Premium is roughly double Standard</b> on the batch meter, and most
 regulated organisations end up on Premium for the governance features. Second, the
 spread from the cheapest batch meter to interactive serverless is more than
@@ -495,7 +539,7 @@ more than how much data they process with it.</p>
 <div class="hd">For the implementer</div>
 <p>The single highest-yield cost control on Databricks is not choosing a smaller
 machine. It is stopping people running scheduled work on All-Purpose Compute because
-that is the cluster already attached to their notebook. At $0.55 against $0.30 that is
+that is the cluster already attached to their notebook. At 5.2356 against 2.8558 that is
 an 83% premium for identical work, and cluster policies can prevent it.</p>
 </div>
 
@@ -549,16 +593,16 @@ buys on the Databricks batch meter.</p>
 
 <div class="sum">
 <span class="t">My arithmetic, not Microsoft's and not Databricks'</span>
-<span class="r">F64, 1-year reserved &nbsp;=&nbsp; 64 CU × $938 / 12 &nbsp;=&nbsp; <b>$5,002.67 a month</b></span>
-<span class="r">Same money on Premium Jobs Compute &nbsp;=&nbsp; $5,002.67 ÷ $0.30 &nbsp;=&nbsp; <b>16,676 DBU-hours</b></span>
-<span class="r">Spread across a 730-hour month &nbsp;=&nbsp; <b>22.8 DBU running continuously</b></span>
-<span class="r">Or as nightly batch over 30 nights &nbsp;=&nbsp; <b>556 DBU-hours a night</b></span>
+<span class="r">F64, 1-year reserved &nbsp;=&nbsp; 64 CU × 9,424.008 / 12 &nbsp;=&nbsp; <b>50,261.38 SEK a month</b></span>
+<span class="r">Same money on Premium Jobs Compute &nbsp;=&nbsp; 50,261.38 ÷ 2.8558 &nbsp;=&nbsp; <b>17,600 DBU-hours</b></span>
+<span class="r">Spread across a 730-hour month &nbsp;=&nbsp; <b>24.1 DBU running continuously</b></span>
+<span class="r">Or as nightly batch over 30 nights &nbsp;=&nbsp; <b>587 DBU-hours a night</b></span>
 <span class="r">Minus the virtual machines, which Azure bills separately &nbsp;=&nbsp; <b>less than that</b></span>
 </div>
 
 <p>So the F64 is worth having if — and only if — your workload would consume more than
-about 17,000 DBU-hours a month on Databricks. If it would consume 3,000, the F64 is
-five times too big and you are buying idle hours.</p>
+about 17,600 DBU-hours a month on Databricks. If it would consume 3,000, the F64 is
+nearly six times too big and you are buying idle hours.</p>
 
 <h3>The cost of idle, stated plainly</h3>
 
@@ -567,10 +611,10 @@ check.</p>
 
 <div class="sum">
 <span class="t">What an unused capacity unit really costs</span>
-<span class="r">F2, 1-year reserved &nbsp;=&nbsp; <b>$156.33 a month</b> for 2 CU × 730 h = 1,460 CU-hours</span>
-<span class="r">If you use all of it &nbsp;→&nbsp; a CU-hour costs <b>$0.107</b></span>
-<span class="r">If you use a tenth of it &nbsp;→&nbsp; the same CU-hour costs <b>$1.07</b></span>
-<span class="r">If you use a twentieth &nbsp;→&nbsp; <b>$2.14</b> — twenty times list</span>
+<span class="r">F2, 1-year reserved &nbsp;=&nbsp; <b>1,570.67 SEK a month</b> for 2 CU × 730 h = 1,460 CU-hours</span>
+<span class="r">If you use all of it &nbsp;→&nbsp; a CU-hour costs <b>1.076 SEK</b></span>
+<span class="r">If you use a tenth of it &nbsp;→&nbsp; the same CU-hour costs <b>10.76 SEK</b></span>
+<span class="r">If you use a twentieth &nbsp;→&nbsp; <b>21.52 SEK</b> — twenty times list</span>
 </div>
 
 <div class="verdict"><b>Idle capacity is the largest single cost on Fabric, and it never
@@ -640,17 +684,23 @@ circulation disagree by more than a factor of two. That is why it is shown as a 
 Treat it as an order of magnitude, not a quote.</p>
 </div>
 
-<p>All figures are one month in <code>eastus</code>, US dollars, on Azure's 730-hour
-month, and — as everywhere on this page — <b>they vary by region</b>.</p>
+<p>All figures are one month in <code>swedencentral</code>, Swedish kronor, on Azure's
+730-hour month, and — as everywhere on this page — <b>they vary by region</b>. The
+Databricks column is stated at the <b>midpoint</b> of the modelled range; the range itself
+is worked below and drawn on the chart.</p>
+
+<p class="lead">Each figure is rounded to the öre and the columns are then added, so a
+subtotal can sit one öre away from the same sum computed unrounded. The tables are built
+to be checked with a calculator against what is printed.</p>
 
 <div class="tw">
 <table>
-<thead><tr><th>Line</th><th class="num">Fabric F64</th><th class="num">Fabric F16 + Pro</th><th class="num">Databricks + Power BI</th></tr></thead>
+<thead><tr><th>Line, SEK / month</th><th class="num">Fabric F64</th><th class="num">Fabric F16 + Pro</th><th class="num">Databricks + Power BI</th></tr></thead>
 <tbody>
-<tr><td>Capacity or batch compute</td><td class="num">$5,002.67</td><td class="num">$1,250.67</td><td class="num">$125.10 – $237.60</td></tr>
-<tr><td>Serving compute</td><td class="num">included</td><td class="num">included</td><td class="num">$0 – $492.80</td></tr>
-<tr><td>Storage, 2 TB</td><td class="num">$53.25</td><td class="num">$53.25</td><td class="num">$40.96</td></tr>
-<tr class="hi"><td><b>Platform subtotal</b></td><td class="num"><b>$5,055.92</b></td><td class="num"><b>$1,303.92</b></td><td class="num"><b>$166 – $771</b></td></tr>
+<tr><td>Capacity or batch compute</td><td class="num">50,261.38</td><td class="num">12,565.34</td><td class="num">1,760.59</td></tr>
+<tr><td>Serving compute</td><td class="num">included</td><td class="num">included</td><td class="num">3,049.20</td></tr>
+<tr><td>Storage, 2 TB</td><td class="num">448.31</td><td class="num">448.31</td><td class="num">358.81</td></tr>
+<tr class="hi"><td><b>Platform subtotal</b></td><td class="num"><b>50,709.69</b></td><td class="num"><b>13,013.65</b></td><td class="num"><b>5,168.60</b></td></tr>
 <tr><td>Licences for 200 viewers</td><td class="num">free</td><td class="num">200 × Pro</td><td class="num">200 × Pro</td></tr>
 <tr><td>Licences for 15 authors</td><td class="num">15 × Pro</td><td class="num">15 × Pro</td><td class="num">15 × Pro</td></tr>
 </tbody>
@@ -659,15 +709,15 @@ month, and — as everywhere on this page — <b>they vary by region</b>.</p>
 
 <figure>
 <div class="fig-box">
-<svg viewBox="0 0 900 380" role="img" aria-label="A bar chart comparing one month of platform cost across three options. Fabric F64 is by far the tallest bar at just over five thousand dollars, Fabric F16 is about a quarter of that, and Databricks plus Power BI is a very short bar shown as a range. Below the axis, a band shows the per-user licence obligation each option still carries.">
+<svg viewBox="0 0 900 380" role="img" aria-label="A bar chart comparing one month of platform cost in Swedish kronor across three options. Fabric F64 is by far the tallest bar at about fifty thousand, Fabric F16 is about a quarter of that at thirteen thousand, and Databricks plus Power BI is a very short bar at five thousand with a whisker showing its modelled range. Below the axis, a band shows the per-user licence obligation each option still carries.">
 <text x="26" y="70" class="cap">MONTHLY PLATFORM COST</text>
 
 <path d="M 80 104 L 850 104" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4" fill="none"/>
 <path d="M 80 202 L 850 202" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4" fill="none"/>
 <path d="M 80 300 L 850 300" stroke="var(--line-2)" stroke-width="1.5" fill="none"/>
-<text x="72" y="108" text-anchor="end" font-size="10" fill="var(--muted)">$5,000</text>
-<text x="72" y="206" text-anchor="end" font-size="10" fill="var(--muted)">$2,500</text>
-<text x="72" y="304" text-anchor="end" font-size="10" fill="var(--muted)">$0</text>
+<text x="72" y="108" text-anchor="end" font-size="10" fill="var(--muted)">50k SEK</text>
+<text x="72" y="206" text-anchor="end" font-size="10" fill="var(--muted)">25k SEK</text>
+<text x="72" y="304" text-anchor="end" font-size="10" fill="var(--muted)">0</text>
 
 <text x="185" y="32" text-anchor="middle" font-size="13" font-weight="650">Fabric F64</text>
 <text x="185" y="50" text-anchor="middle" font-size="11" fill="var(--muted)">everyone views free</text>
@@ -676,15 +726,15 @@ month, and — as everywhere on this page — <b>they vary by region</b>.</p>
 <text x="715" y="32" text-anchor="middle" font-size="13" font-weight="650">Databricks + Power BI</text>
 <text x="715" y="50" text-anchor="middle" font-size="11" fill="var(--muted)">two platforms, two bills</text>
 
-<rect x="110" y="102" width="150" height="198" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="185" y="94" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">$5,055.92</text>
+<rect x="110" y="101" width="150" height="199" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="185" y="93" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">50,709.69</text>
 
 <rect x="375" y="249" width="150" height="51" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="450" y="241" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">$1,303.92</text>
+<text x="450" y="241" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">13,013.65</text>
 
-<rect x="640" y="293" width="150" height="7" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.5"/>
-<rect x="640" y="270" width="150" height="23" fill="none" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="5 4"/>
-<text x="715" y="262" text-anchor="middle" font-size="12.5" fill="var(--teal)" font-weight="650">$166 – $771</text>
+<rect x="640" y="280" width="150" height="20" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.5"/>
+<path d="M 715 266 L 715 294 M 705 266 L 725 266 M 705 294 L 725 294" stroke="var(--teal)" stroke-width="1.5" fill="none"/>
+<text x="715" y="258" text-anchor="middle" font-size="12.5" fill="var(--teal)" font-weight="650">5,168.60</text>
 
 <rect x="110" y="316" width="150" height="30" rx="4" fill="none" stroke="var(--line-2)" stroke-width="1.5" stroke-dasharray="5 4"/>
 <rect x="375" y="316" width="150" height="30" rx="4" fill="none" stroke="var(--line-2)" stroke-width="1.5" stroke-dasharray="5 4"/>
@@ -693,13 +743,14 @@ month, and — as everywhere on this page — <b>they vary by region</b>.</p>
 <text x="450" y="336" text-anchor="middle" font-size="12" fill="var(--ink-2)">215 × Pro</text>
 <text x="715" y="336" text-anchor="middle" font-size="12" fill="var(--ink-2)">215 × Pro</text>
 
-<text x="80" y="366" font-size="10" fill="var(--muted)">dashed = per-user licences, at whatever rate your agreement says</text>
+<text x="80" y="366" font-size="10" fill="var(--muted)">whisker = modelled range 1,584 to 8,753 · dashed = per-user licences, your rate</text>
 </svg>
 </div>
 <figcaption><b>The solid bars are priced; the dashed boxes are not.</b> Drawing the
 licence obligation as an empty outline is deliberate — its height depends on a rate I
 could not source first-party, so putting a made-up number in the chart would be worse
-than leaving the box open. Note also that storage, at 2 TB, is about one pixel of the
+than leaving the box open. The whisker on the Databricks bar carries the modelled range
+the midpoint came from. Note also that storage, at 2 TB, is about two pixels of the
 tallest bar.</figcaption>
 </figure>
 
@@ -708,17 +759,18 @@ tallest bar.</figcaption>
 <div class="sum">
 <span class="t">Nightly batch — my arithmetic, on modelled assumptions</span>
 <span class="r">1 driver + 4 workers, D4s v5, 2 hours × 30 nights &nbsp;=&nbsp; 300 node-hours</span>
-<span class="r">virtual machines &nbsp;=&nbsp; 300 × $0.192 &nbsp;=&nbsp; <b>$57.60</b></span>
-<span class="r">if a node draws 0.75 DBU &nbsp;→&nbsp; 225 DBU-h × $0.30 &nbsp;=&nbsp; $67.50</span>
-<span class="r">if a node draws 2.0 DBU &nbsp;→&nbsp; 600 DBU-h × $0.30 &nbsp;=&nbsp; $180.00</span>
-<span class="r">batch total &nbsp;=&nbsp; <b>$125.10 to $237.60</b></span>
+<span class="r">virtual machines &nbsp;=&nbsp; 300 × 1.9419 &nbsp;=&nbsp; <b>582.57 SEK</b></span>
+<span class="r">if a node draws 0.75 DBU &nbsp;→&nbsp; 225 DBU-h × 2.8558 &nbsp;=&nbsp; 642.56 SEK</span>
+<span class="r">if a node draws 2.0 DBU &nbsp;→&nbsp; 600 DBU-h × 2.8558 &nbsp;=&nbsp; 1,713.48 SEK</span>
+<span class="r">batch range &nbsp;=&nbsp; 1,225.13 to 2,296.05 &nbsp;→&nbsp; <b>midpoint 1,760.59 SEK</b></span>
 </div>
 
 <div class="sum">
 <span class="t">Serving compute — the wider of the two uncertainties</span>
-<span class="r">nothing, if Power BI reads the Delta files directly &nbsp;=&nbsp; <b>$0</b></span>
+<span class="r">nothing, if Power BI reads the Delta files directly &nbsp;=&nbsp; <b>0 SEK</b></span>
 <span class="r">a small serverless warehouse, 4 DBU/h, 8 h × 22 days &nbsp;=&nbsp; 176 hours</span>
-<span class="r">176 × 4 × $0.70 &nbsp;=&nbsp; <b>$492.80</b></span>
+<span class="r">176 × 4 × 8.6625 &nbsp;=&nbsp; <b>6,098.40 SEK</b></span>
+<span class="r">range 0 to 6,098.40 &nbsp;→&nbsp; <b>midpoint 3,049.20 SEK</b></span>
 </div>
 
 <p>Both blocks rest on a Databricks-unit count per machine that I could not verify. That
@@ -728,15 +780,15 @@ direction</i>:</p>
 
 <div class="sum">
 <span class="t">Does the recommendation survive my worst error?</span>
-<span class="r">my range &nbsp;=&nbsp; $166 to $771 a month</span>
-<span class="r">if I have overestimated threefold &nbsp;→&nbsp; ~$55 &nbsp;→&nbsp; <b>$1,249 below F16</b></span>
-<span class="r">if I have underestimated threefold &nbsp;→&nbsp; ~$2,314 &nbsp;→&nbsp; <b>$1,010 above F16</b></span>
-<span class="r">so the gap either way &nbsp;≤&nbsp; <b>about $1,250 a month</b></span>
+<span class="r">my midpoint &nbsp;=&nbsp; 5,168.60 SEK a month (range 1,584 to 8,753)</span>
+<span class="r">if I have overestimated threefold &nbsp;→&nbsp; ~1,723 &nbsp;→&nbsp; <b>11,291 below F16</b></span>
+<span class="r">if I have underestimated threefold &nbsp;→&nbsp; ~15,506 &nbsp;→&nbsp; <b>2,492 above F16</b></span>
+<span class="r">so the gap either way &nbsp;≤&nbsp; <b>about 11,300 SEK a month</b></span>
 </div>
 
 <p>Note what that shows. Being wrong in the expensive direction makes the case for
 Fabric <i>stronger</i>, not weaker — so only the cheap direction threatens the
-recommendation, and even there the saving tops out near $1,250 a month. <b>The
+recommendation, and even there the saving tops out near 11,300 SEK a month. <b>The
 conclusion below is robust to the worst error I am plausibly making.</b></p>
 
 <h3>The number that actually decides it</h3>
@@ -747,30 +799,30 @@ processing power.</p>
 
 <div class="sum">
 <span class="t">What the F64 threshold is really costing, per viewer</span>
-<span class="r">F64 reserved − F16 reserved &nbsp;=&nbsp; $5,002.67 − $1,250.67 &nbsp;=&nbsp; <b>$3,752.00</b></span>
-<span class="r">spread across 200 viewers &nbsp;=&nbsp; <b>$18.76 per viewer per month</b></span>
-<span class="r">so: Pro rate below $18.76 &nbsp;→&nbsp; <b>F16 + Pro is cheaper</b></span>
-<span class="r">&nbsp;&nbsp;&nbsp;&nbsp;Pro rate above $18.76 &nbsp;→&nbsp; <b>F64 pays for itself</b></span>
-<span class="r">or, at a Pro rate of P &nbsp;→&nbsp; the cliff breaks even at 3,752 ÷ P viewers</span>
+<span class="r">F64 reserved − F16 reserved &nbsp;=&nbsp; 50,261.38 − 12,565.34 &nbsp;=&nbsp; <b>37,696.04 SEK</b></span>
+<span class="r">spread across 200 viewers &nbsp;=&nbsp; <b>188.48 SEK per viewer per month</b></span>
+<span class="r">so: Pro rate below 188.48 &nbsp;→&nbsp; <b>F16 + Pro is cheaper</b></span>
+<span class="r">&nbsp;&nbsp;&nbsp;&nbsp;Pro rate above 188.48 &nbsp;→&nbsp; <b>F64 pays for itself</b></span>
+<span class="r">or, at a Pro rate of P &nbsp;→&nbsp; the cliff breaks even at 37,696 ÷ P viewers</span>
 </div>
 
 <p>I have deliberately not put a Power BI Pro price on this page. Microsoft's licensing
 documentation defers to its pricing site, and that site does not serve a figure I can
 quote with confidence. So the section gives you the threshold instead: <b>take your own
-negotiated rate and compare it to $18.76.</b> That number stays correct even when list
-prices move.</p>
+negotiated rate and compare it to 188.48 SEK.</b> That number stays correct even when
+list prices move.</p>
 
 <h3>Choosing the size</h3>
 
 <figure>
 <div class="fig-box">
-<svg viewBox="0 0 900 430" role="img" aria-label="A decision flowchart for choosing a Fabric capacity size. Three questions in sequence: whether viewers multiplied by the Pro rate exceeds three thousand seven hundred and fifty two dollars, whether two hundred people open reports in the same hour, and whether the nightly batch is small. Each yes routes to a recommended SKU; falling through advises starting small because scaling is a portal action.">
+<svg viewBox="0 0 900 430" role="img" aria-label="A decision flowchart for choosing a Fabric capacity size. Three questions in sequence: whether viewers multiplied by the Pro rate exceeds thirty seven thousand six hundred and ninety six kronor, whether two hundred people open reports in the same hour, and whether the nightly batch is small. Each yes routes to a recommended SKU; falling through advises starting small because scaling is a portal action.">
 <rect x="310" y="16" width="240" height="40" rx="7" fill="var(--surface-2)" stroke="var(--line-2)"/>
 <text x="430" y="41" text-anchor="middle" font-size="13" font-weight="650">Sizing the capacity</text>
 <path d="M 430 56 L 430 80" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
 
 <rect x="230" y="80" width="400" height="58" rx="7" fill="var(--surface)" stroke="var(--line-2)"/>
-<text x="430" y="105" text-anchor="middle" font-size="13" font-weight="650">Viewers × your Pro rate over $3,752?</text>
+<text x="430" y="105" text-anchor="middle" font-size="13" font-weight="650">Viewers × your Pro rate over 37,696 SEK?</text>
 <text x="430" y="124" text-anchor="middle" font-size="11" fill="var(--muted)">the capacity gap has already paid for itself</text>
 <path d="M 630 109 L 668 109" stroke="var(--accent)" stroke-width="1.8" fill="none"/>
 <text x="649" y="102" text-anchor="middle" font-size="9" fill="var(--accent)" class="mono">YES</text>
@@ -832,21 +884,21 @@ invoice.</p>
 <li><b>Nothing here is working hard.</b> Tens of gigabytes and a two-hour batch do not
 stress either platform. The performance question everyone opens with is not the
 question.</li>
-<li><b>Databricks compute really is the cheapest line</b> — $166 to $771 against
-$1,304. It is also the smallest line, which is the point.</li>
+<li><b>Databricks compute really is the cheapest line</b> — 5,168.60 SEK against
+13,013.65. It is also the smallest line, which is the point.</li>
 <li><b>The biggest number in the whole comparison is a licensing threshold</b>, not
 compute. That makes the platform choice nearly free and the licensing choice
 expensive.</li>
-<li><b>At its most generous, the saving is around $13,000 a year</b> — $1,138 a month, if
-Databricks lands at the bottom of its range. That is the strongest form of the case
-against my recommendation, and it still does not cover a second vendor relationship, a
-second set of skills to hire for, a second support contract, and the seam between them.
-One engineer costs more than the saving.</li>
+<li><b>The saving is about 94,000 SEK a year</b> — 7,845.05 a month at the midpoint, and
+at most 11,430 a month if Databricks lands at the bottom of its range. That is the
+strongest form of the case against my recommendation, and it still does not cover a second
+vendor relationship, a second set of skills to hire for, a second support contract, and the
+seam between them. One engineer costs more than the saving.</li>
 </ol>
 
 <div class="verdict"><b>Buy Fabric. Start at F16 with Pro licences for the people who
 genuinely open reports — not F64 on day one.</b> Move to F64 when your viewer count
-passes $3,752 divided by your Pro rate, or when the morning peak starts throttling.
+passes 37,696 SEK divided by your Pro rate, or when the morning peak starts throttling.
 Revisit Databricks the first time someone asks for real machine learning, not before.</div>
 
 <p>The case against this: a company that expects to do serious data science within two
@@ -936,7 +988,7 @@ platform — it moves along whichever of those two axes the platform left soft.<
 <li>Power BI is not integrated — it is the same product. Direct Lake removes the import-refresh cycle entirely.</li>
 <li>Identity, tenant policy, sensitivity labels and audit are the ones your organisation already runs.</li>
 <li>One storage layer in open Delta Parquet, readable by every engine including engines outside Fabric.</li>
-<li>Low floor: an F2 reserved is $156.33 a month, so a proof of concept is genuinely cheap to start.</li>
+<li>Low floor: an F2 reserved is 1,570.67 SEK a month, so a proof of concept is genuinely cheap to start.</li>
 <li>Analysts and report authors need no new tooling, no cluster concepts, and no new login.</li>
 </ul>
 <span class="g b">Against it</span>
@@ -1099,8 +1151,14 @@ attack them first.</p>
 
 <ul>
 <li><b>The prices are one region on one day.</b> Everything came from
-<code>eastus</code> on 2026-09-04 and all of it varies by region. Regional spreads on
-Azure are routinely more than 20%.</li>
+<code>swedencentral</code> on 2026-09-05. The regional spread is not hypothetical: the
+same Fabric reservation is 15.8% dearer in West Europe, so an organisation that
+standardised on Amsterdam before Sweden Central existed is reading the wrong column of
+this page.</li>
+<li><b>These are SEK list prices, not your prices.</b> Enterprise agreements are
+negotiated, and they are negotiated in a currency. Nothing here accounts for a discount,
+and nothing here is an exchange-rate calculation — every figure is Microsoft's published
+kronor rate on the day.</li>
 <li><b>List prices are not what large customers pay.</b> Databricks committed-use
 discounts are not public, and Microsoft enterprise agreements are negotiated. Every
 Databricks figure here is undiscounted; the Fabric reservation discount is public and
@@ -1140,17 +1198,19 @@ accordingly.</li>
 <div class="deeper">
 <div class="t">Everything quoted above, in the order it was used</div>
 <ul>
-<li><span class="src">Azure</span> Retail Prices API — the source of every dollar figure
-on this page —
+<li><span class="src">Azure</span> Retail Prices API — the source of every price on this
+page —
 <a href="https://prices.azure.com/api/retail/prices">prices.azure.com/api/retail/prices</a>,
-filtered to <code>Microsoft Fabric</code> and <code>Azure Databricks</code> in
-<code>eastus</code>. Section 06 also uses it for <code>Standard_D4s_v5</code> Linux
-virtual machines ($0.192 an hour) and Azure Data Lake Storage Gen2 hot storage
-($0.020 per GB-month), both in the same region on the same day.</li>
+queried with <code>currencyCode=SEK</code> and filtered to <code>Microsoft Fabric</code>
+and <code>Azure Databricks</code> in <code>swedencentral</code>. Section 06 also uses it
+for <code>Standard_D4s_v5</code> Linux virtual machines (1.9419 SEK an hour) and Azure
+Data Lake Storage Gen2 hot storage, local redundancy, first 50 TB band (0.1752 SEK per
+GB-month), both in the same region on the same day. The West Europe and North Europe
+comparisons in section 04 come from the same endpoint.</li>
 <li><span class="src">Absent</span> <b>The Power BI Pro per-user price is deliberately
 not quoted.</b> Microsoft's licensing documentation defers to its pricing site, which
 does not serve a figure to an automated fetch. Rather than repeat a number from a
-third-party blog, section 06 gives the break-even rate — $18.76 a viewer a month — so
+third-party blog, section 06 gives the break-even rate — 188.48 SEK a viewer a month — so
 you can compare it against your own agreement.</li>
 <li><span class="src">Microsoft</span> Understand Microsoft Fabric licenses and capacity
 — the SKU table, and the F64 free-viewing threshold —
@@ -1181,10 +1241,11 @@ Databricks — the reverse-direction mechanics —
 <p><b>What this page is.</b> A comparison written to be argued with, not a
 recommendation to adopt anything. Every vendor claim above is quoted or paraphrased
 from a page linked in section 12. Every calculation is labelled as mine and shown in
-full so it can be checked line by line. Where a statement is a judgement rather than a
+full so it can be checked line by line, and no figure on this page is an exchange-rate
+conversion — the kronor prices are Microsoft's own. Where a statement is a judgement rather than a
 source, it is written as one.</p>
-<p><b>Verified 2026-09-04, prices from <code>eastus</code> in US dollars.</b> Rates,
-regional pricing, preview status and product names all change. Re-read section 11
+<p><b>Verified 2026-09-05, prices from <code>swedencentral</code> in Swedish kronor.</b>
+Rates, regional pricing, preview status and product names all change. Re-read section 11
 before quoting anything here in a decision document.</p>
 </footer>
 

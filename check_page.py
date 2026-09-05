@@ -219,9 +219,15 @@ def check(path: Path) -> int:
             )
 
     # Every price on this page must sit near its regional caveat, or a reader outside
-    # the US will quote a number that does not apply to them.
-    if "$20" in h and "vary by region" not in h:
-        problems.append("seat prices present without the 'vary by region' caveat")
+    # the quoted region will quote a number that does not apply to them.
+    #
+    # This used to test `"$20" in h` alone. When fabric-vs-databricks.html was re-priced
+    # from US dollars into Swedish kronor, every "$" disappeared and the check silently
+    # stopped firing — on a page where region matters MORE, not less: the same Fabric
+    # reservation is 15.8% dearer in West Europe than in Sweden Central. A currency
+    # symbol is not the signal; a price is.
+    if ("$20" in h or "SEK" in h) and "vary by region" not in h:
+        problems.append("prices present without the 'vary by region' caveat")
 
     ids = set(re.findall(r'id="([^"]+)"', h))
     dangling = sorted(set(re.findall(r'href="#([^"]+)"', h)) - ids)

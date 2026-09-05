@@ -14,7 +14,11 @@ and a routing rule. It opens by separating the three different products people c
 question underneath all of the above. Neither meter measures your data, so "which handles
 large data better" has no answer; what sets the bill is duty cycle. First-party prices
 straight from the Azure retail price API, Fabric's four throttling stages, a break-even
-calculation you can check line by line, and a four-question decision tree.
+calculation you can check line by line, and a four-question decision tree. Costed in
+**SEK for Sweden Central** — Microsoft's own kronor list prices, queried with
+`currencyCode=SEK`, not an exchange rate applied to dollar figures. Section 04 carries what
+a one-year capacity reservation actually commits you to, and why the three-year term buys
+no extra discount.
 
 Section 06 costs one month in full for a composite mid-sized global manufacturer starting
 with no platform at all. Two findings worth the click: the modelled dataset for a global
@@ -90,7 +94,7 @@ reintroduces one fails the check rather than shipping.
 | `index.html` | **Generated.** What GitHub Pages serves at the site root: the full source wrapped in a real HTML document. Produced by `build_page.py`; don't hand-edit. |
 | `claudecode-vs-cowork/index.html` | **Generated.** The excerpt, served at `/claudecode-vs-cowork/`. Same generator; don't hand-edit. |
 | `claude-code-vs-copilot.html` | **Source of the Copilot comparison**, served at `/claudecode-vs-copilot/`. Same Artifact page form. |
-| `fabric-vs-databricks.html` | **Source of the platform comparison**, served at `/fabric-vs-databricks/`. Prices read from the Azure retail price API on 2026-09-04, `eastus`, USD. Same Artifact page form. |
+| `fabric-vs-databricks.html` | **Source of the platform comparison**, served at `/fabric-vs-databricks/`. Prices read from the Azure retail price API on 2026-09-05, `swedencentral`, SEK. Same Artifact page form. |
 | `claude-code-vs-cowork.md` | The same argument in prose, readable on GitHub. |
 | `claude-surfaces-research.md` | **The facts basis.** Numbered, dated sources — `[1P]` first-party, `[3P]` third-party, `UNVERIFIED` where a claim rests on third-party sources only. Start here if you want to check a number. |
 | `check_page.py` | Static checks for a source page. Run it against each source. |
@@ -116,7 +120,8 @@ The checker enforces: self-containment (no scripts, external assets, CDN or Merm
 Artifact page form, the `svg text{fill:…}` override trap, hardcoded hex, all three theme
 declarations, per-SVG integer `viewBox` + `role="img"` + a substantive `aria-label`, SVG
 text geometry against its containing rect, banned stale claims, first-mention expansion
-of `MCP` and `RBAC`, the regional price caveat, and dangling `#` anchors.
+of `MCP` and `RBAC`, the regional price caveat (triggered by a `$` or `SEK` price), and
+dangling `#` anchors.
 
 To inspect one diagram at a time, extract the `<style>` block plus a single `<figure>`
 into a standalone file and screenshot that — cropping a full-page screenshot with
