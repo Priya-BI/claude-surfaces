@@ -212,7 +212,7 @@ steering meeting, and needs arithmetic rather than a preference.</p>
 <span><b>Verified</b> 2026-09-04</span>
 <span><b>Prices</b> Azure retail price API, East US, USD</span>
 <span><b>Sources</b> first-party only</span>
-<span><b>Shelf life</b> short — see section 10</span>
+<span><b>Shelf life</b> short — see section 11</span>
 </div>
 </div>
 </header>
@@ -227,6 +227,7 @@ steering meeting, and needs arithmetic rather than a preference.</p>
 <li><a href="#meters">Two meters, two shapes</a></li>
 <li><a href="#prices">What the numbers are</a></li>
 <li><a href="#breakeven">The break-even is a duty cycle</a></li>
+<li><a href="#month">One month, both bills</a></li>
 <li><a href="#growth">What happens when the data grows</a></li>
 <li><a href="#proscons">Pros and cons, plainly</a></li>
 <li><a href="#decide">Choosing</a></li>
@@ -581,7 +582,279 @@ left running with auto-termination disabled bills at the full rate while nobody 
 it. The difference is that Databricks makes that visible — the cost goes up — whereas
 on Fabric the cost stays exactly the same and the waste hides inside it.</p>
 
-<h2 id="growth"><span class="num">06</span>What happens when the data grows</h2>
+<h2 id="month"><span class="num">06</span>One month, one company, both bills</h2>
+
+<p>Everything above is a shape. This section puts numbers in it, for one organisation,
+for one month. If you only read one part of this page, read this one — and then
+substitute your own figures, because the method matters more than my answer.</p>
+
+<div class="plain">
+<span class="t">The company</span>
+<p>A global lift manufacturer. Around 2,000 staff, four production plants, direct sales
+offices in 20 countries and distributors in about 70 more. It has <b>no data platform
+today</b> — reporting is spreadsheets and exports from the finance system. Year one is
+deliberately unglamorous: orders, invoices, inventory, customer records, field-service
+jobs and production bookings, landed once a night, modelled, and served to Power BI. No
+streaming. No machine learning. About <b>200 people who open a report</b>, 15 who build
+them, and 4 engineers who run the whole thing.</p>
+</div>
+
+<p>This is a composite, not a real organisation, and every figure in it is mine. It is
+built to be typical rather than accurate.</p>
+
+<h3>First finding: the data is small</h3>
+
+<p>Before pricing anything, size it. This is the step most platform decisions skip, and
+it is the one that decides whether the rest of the conversation is even necessary.</p>
+
+<div class="sum">
+<span class="t">How much data a global manufacturer actually has</span>
+<span class="r">~15,000 orders a year × ~30 lines &nbsp;=&nbsp; 450,000 rows a year</span>
+<span class="r">inventory movements &nbsp;=&nbsp; ~3,000,000 rows a year</span>
+<span class="r">field-service jobs &nbsp;=&nbsp; ~200,000 rows a year</span>
+<span class="r">production bookings &nbsp;=&nbsp; ~2,000,000 rows a year</span>
+<span class="r">&nbsp;&nbsp;total &nbsp;≈&nbsp; <b>5,650,000 fact rows a year</b></span>
+<span class="r">three years of history &nbsp;≈&nbsp; 17,000,000 rows</span>
+<span class="r">at ~250 bytes a row, uncompressed &nbsp;≈&nbsp; 4 GB</span>
+<span class="r">× 4 for raw, cleaned, modelled and staging copies &nbsp;≈&nbsp; <b>17 GB</b></span>
+</div>
+
+<p><b>The modelled dataset for a global company with a nine-figure turnover is tens of
+gigabytes.</b> Not terabytes, and nowhere near petabytes. That is not unusual — it is
+what transactional business data actually weighs once you stop counting log files.</p>
+
+<p>The costing below allows <b>2 TB</b> anyway, roughly a hundred times the modelled
+size, to cover raw file landings, document attachments, audit history, and everything
+nobody predicted. Even at that deliberate overshoot, storage never rises above about 1%
+of the bill. <b>Storage is not the decision. It is a rounding error.</b></p>
+
+<h3>The three realistic options</h3>
+
+<div class="note warn">
+<span class="lbl">Read the columns differently — they are not equally solid</span>
+<p><b>The Fabric column is sourced.</b> Every rate comes from the Azure retail price API
+and is quoted in section 04.</p>
+<p><b>The Databricks column is modelled.</b> How many Databricks units a given virtual
+machine draws is not published anywhere I could verify first-party, and the figures in
+circulation disagree by more than a factor of two. That is why it is shown as a range.
+Treat it as an order of magnitude, not a quote.</p>
+</div>
+
+<p>All figures are one month in <code>eastus</code>, US dollars, on Azure's 730-hour
+month, and — as everywhere on this page — <b>they vary by region</b>.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Line</th><th class="num">Fabric F64</th><th class="num">Fabric F16 + Pro</th><th class="num">Databricks + Power BI</th></tr></thead>
+<tbody>
+<tr><td>Capacity or batch compute</td><td class="num">$5,002.67</td><td class="num">$1,250.67</td><td class="num">$125.10 – $237.60</td></tr>
+<tr><td>Serving compute</td><td class="num">included</td><td class="num">included</td><td class="num">$0 – $492.80</td></tr>
+<tr><td>Storage, 2 TB</td><td class="num">$53.25</td><td class="num">$53.25</td><td class="num">$40.96</td></tr>
+<tr class="hi"><td><b>Platform subtotal</b></td><td class="num"><b>$5,055.92</b></td><td class="num"><b>$1,303.92</b></td><td class="num"><b>$166 – $771</b></td></tr>
+<tr><td>Licences for 200 viewers</td><td class="num">free</td><td class="num">200 × Pro</td><td class="num">200 × Pro</td></tr>
+<tr><td>Licences for 15 authors</td><td class="num">15 × Pro</td><td class="num">15 × Pro</td><td class="num">15 × Pro</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 900 380" role="img" aria-label="A bar chart comparing one month of platform cost across three options. Fabric F64 is by far the tallest bar at just over five thousand dollars, Fabric F16 is about a quarter of that, and Databricks plus Power BI is a very short bar shown as a range. Below the axis, a band shows the per-user licence obligation each option still carries.">
+<text x="26" y="70" class="cap">MONTHLY PLATFORM COST</text>
+
+<path d="M 80 104 L 850 104" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4" fill="none"/>
+<path d="M 80 202 L 850 202" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4" fill="none"/>
+<path d="M 80 300 L 850 300" stroke="var(--line-2)" stroke-width="1.5" fill="none"/>
+<text x="72" y="108" text-anchor="end" font-size="10" fill="var(--muted)">$5,000</text>
+<text x="72" y="206" text-anchor="end" font-size="10" fill="var(--muted)">$2,500</text>
+<text x="72" y="304" text-anchor="end" font-size="10" fill="var(--muted)">$0</text>
+
+<text x="185" y="32" text-anchor="middle" font-size="13" font-weight="650">Fabric F64</text>
+<text x="185" y="50" text-anchor="middle" font-size="11" fill="var(--muted)">everyone views free</text>
+<text x="450" y="32" text-anchor="middle" font-size="13" font-weight="650">Fabric F16</text>
+<text x="450" y="50" text-anchor="middle" font-size="11" fill="var(--muted)">pay per viewer</text>
+<text x="715" y="32" text-anchor="middle" font-size="13" font-weight="650">Databricks + Power BI</text>
+<text x="715" y="50" text-anchor="middle" font-size="11" fill="var(--muted)">two platforms, two bills</text>
+
+<rect x="110" y="102" width="150" height="198" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="185" y="94" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">$5,055.92</text>
+
+<rect x="375" y="249" width="150" height="51" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="450" y="241" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">$1,303.92</text>
+
+<rect x="640" y="293" width="150" height="7" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.5"/>
+<rect x="640" y="270" width="150" height="23" fill="none" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="715" y="262" text-anchor="middle" font-size="12.5" fill="var(--teal)" font-weight="650">$166 – $771</text>
+
+<rect x="110" y="316" width="150" height="30" rx="4" fill="none" stroke="var(--line-2)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<rect x="375" y="316" width="150" height="30" rx="4" fill="none" stroke="var(--line-2)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<rect x="640" y="316" width="150" height="30" rx="4" fill="none" stroke="var(--line-2)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="185" y="336" text-anchor="middle" font-size="12" fill="var(--ink-2)">15 × Pro</text>
+<text x="450" y="336" text-anchor="middle" font-size="12" fill="var(--ink-2)">215 × Pro</text>
+<text x="715" y="336" text-anchor="middle" font-size="12" fill="var(--ink-2)">215 × Pro</text>
+
+<text x="80" y="366" font-size="10" fill="var(--muted)">dashed = per-user licences, at whatever rate your agreement says</text>
+</svg>
+</div>
+<figcaption><b>The solid bars are priced; the dashed boxes are not.</b> Drawing the
+licence obligation as an empty outline is deliberate — its height depends on a rate I
+could not source first-party, so putting a made-up number in the chart would be worse
+than leaving the box open. Note also that storage, at 2 TB, is about one pixel of the
+tallest bar.</figcaption>
+</figure>
+
+<h3>Where the Databricks range comes from</h3>
+
+<div class="sum">
+<span class="t">Nightly batch — my arithmetic, on modelled assumptions</span>
+<span class="r">1 driver + 4 workers, D4s v5, 2 hours × 30 nights &nbsp;=&nbsp; 300 node-hours</span>
+<span class="r">virtual machines &nbsp;=&nbsp; 300 × $0.192 &nbsp;=&nbsp; <b>$57.60</b></span>
+<span class="r">if a node draws 0.75 DBU &nbsp;→&nbsp; 225 DBU-h × $0.30 &nbsp;=&nbsp; $67.50</span>
+<span class="r">if a node draws 2.0 DBU &nbsp;→&nbsp; 600 DBU-h × $0.30 &nbsp;=&nbsp; $180.00</span>
+<span class="r">batch total &nbsp;=&nbsp; <b>$125.10 to $237.60</b></span>
+</div>
+
+<div class="sum">
+<span class="t">Serving compute — the wider of the two uncertainties</span>
+<span class="r">nothing, if Power BI reads the Delta files directly &nbsp;=&nbsp; <b>$0</b></span>
+<span class="r">a small serverless warehouse, 4 DBU/h, 8 h × 22 days &nbsp;=&nbsp; 176 hours</span>
+<span class="r">176 × 4 × $0.70 &nbsp;=&nbsp; <b>$492.80</b></span>
+</div>
+
+<p>Both blocks rest on a Databricks-unit count per machine that I could not verify. That
+sounds fatal to the comparison. It is not, and the reason is worth working rather than
+asserting. Take my estimate and allow it to be wrong by a factor of three <i>in either
+direction</i>:</p>
+
+<div class="sum">
+<span class="t">Does the recommendation survive my worst error?</span>
+<span class="r">my range &nbsp;=&nbsp; $166 to $771 a month</span>
+<span class="r">if I have overestimated threefold &nbsp;→&nbsp; ~$55 &nbsp;→&nbsp; <b>$1,249 below F16</b></span>
+<span class="r">if I have underestimated threefold &nbsp;→&nbsp; ~$2,314 &nbsp;→&nbsp; <b>$1,010 above F16</b></span>
+<span class="r">so the gap either way &nbsp;≤&nbsp; <b>about $1,250 a month</b></span>
+</div>
+
+<p>Note what that shows. Being wrong in the expensive direction makes the case for
+Fabric <i>stronger</i>, not weaker — so only the cheap direction threatens the
+recommendation, and even there the saving tops out near $1,250 a month. <b>The
+conclusion below is robust to the worst error I am plausibly making.</b></p>
+
+<h3>The number that actually decides it</h3>
+
+<p>Look again at the table. The largest figure on it is not compute. It is the gap
+between two Fabric SKUs — and that gap exists to buy free report viewing, not
+processing power.</p>
+
+<div class="sum">
+<span class="t">What the F64 threshold is really costing, per viewer</span>
+<span class="r">F64 reserved − F16 reserved &nbsp;=&nbsp; $5,002.67 − $1,250.67 &nbsp;=&nbsp; <b>$3,752.00</b></span>
+<span class="r">spread across 200 viewers &nbsp;=&nbsp; <b>$18.76 per viewer per month</b></span>
+<span class="r">so: Pro rate below $18.76 &nbsp;→&nbsp; <b>F16 + Pro is cheaper</b></span>
+<span class="r">&nbsp;&nbsp;&nbsp;&nbsp;Pro rate above $18.76 &nbsp;→&nbsp; <b>F64 pays for itself</b></span>
+<span class="r">or, at a Pro rate of P &nbsp;→&nbsp; the cliff breaks even at 3,752 ÷ P viewers</span>
+</div>
+
+<p>I have deliberately not put a Power BI Pro price on this page. Microsoft's licensing
+documentation defers to its pricing site, and that site does not serve a figure I can
+quote with confidence. So the section gives you the threshold instead: <b>take your own
+negotiated rate and compare it to $18.76.</b> That number stays correct even when list
+prices move.</p>
+
+<h3>Choosing the size</h3>
+
+<figure>
+<div class="fig-box">
+<svg viewBox="0 0 900 430" role="img" aria-label="A decision flowchart for choosing a Fabric capacity size. Three questions in sequence: whether viewers multiplied by the Pro rate exceeds three thousand seven hundred and fifty two dollars, whether two hundred people open reports in the same hour, and whether the nightly batch is small. Each yes routes to a recommended SKU; falling through advises starting small because scaling is a portal action.">
+<rect x="310" y="16" width="240" height="40" rx="7" fill="var(--surface-2)" stroke="var(--line-2)"/>
+<text x="430" y="41" text-anchor="middle" font-size="13" font-weight="650">Sizing the capacity</text>
+<path d="M 430 56 L 430 80" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
+
+<rect x="230" y="80" width="400" height="58" rx="7" fill="var(--surface)" stroke="var(--line-2)"/>
+<text x="430" y="105" text-anchor="middle" font-size="13" font-weight="650">Viewers × your Pro rate over $3,752?</text>
+<text x="430" y="124" text-anchor="middle" font-size="11" fill="var(--muted)">the capacity gap has already paid for itself</text>
+<path d="M 630 109 L 668 109" stroke="var(--accent)" stroke-width="1.8" fill="none"/>
+<text x="649" y="102" text-anchor="middle" font-size="9" fill="var(--accent)" class="mono">YES</text>
+<rect x="670" y="88" width="212" height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/>
+<text x="776" y="107" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">F64</text>
+<text x="776" y="122" text-anchor="middle" font-size="10" fill="var(--accent)">free viewing included</text>
+<path d="M 430 138 L 430 170" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
+<text x="446" y="158" text-anchor="middle" font-size="9" fill="var(--muted)" class="mono">NO</text>
+
+<rect x="230" y="170" width="400" height="58" rx="7" fill="var(--surface)" stroke="var(--line-2)"/>
+<text x="430" y="195" text-anchor="middle" font-size="13" font-weight="650">Will 200+ people open reports in one hour?</text>
+<text x="430" y="214" text-anchor="middle" font-size="11" fill="var(--muted)">Monday at 09:00, not the monthly average</text>
+<path d="M 630 199 L 668 199" stroke="var(--accent)" stroke-width="1.8" fill="none"/>
+<text x="649" y="192" text-anchor="middle" font-size="9" fill="var(--accent)" class="mono">YES</text>
+<rect x="670" y="178" width="212" height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/>
+<text x="776" y="197" text-anchor="middle" font-size="12.5" fill="var(--accent)" font-weight="650">F32</text>
+<text x="776" y="212" text-anchor="middle" font-size="10" fill="var(--accent)">for concurrency headroom</text>
+<path d="M 430 228 L 430 260" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
+<text x="446" y="248" text-anchor="middle" font-size="9" fill="var(--muted)" class="mono">NO</text>
+
+<rect x="230" y="260" width="400" height="58" rx="7" fill="var(--surface)" stroke="var(--line-2)"/>
+<text x="430" y="285" text-anchor="middle" font-size="13" font-weight="650">Nightly batch under 3 hours, under 100 GB?</text>
+<text x="430" y="304" text-anchor="middle" font-size="11" fill="var(--muted)">32 Spark VCores, 96 with burst, is ample</text>
+<path d="M 630 289 L 668 289" stroke="var(--teal)" stroke-width="1.8" fill="none"/>
+<text x="649" y="282" text-anchor="middle" font-size="9" fill="var(--teal)" class="mono">YES</text>
+<rect x="670" y="268" width="212" height="42" rx="7" fill="var(--teal-soft)" stroke="var(--teal)"/>
+<text x="776" y="287" text-anchor="middle" font-size="12.5" fill="var(--teal)" font-weight="650">F8 or F16</text>
+<text x="776" y="302" text-anchor="middle" font-size="10" fill="var(--teal)">plus Pro for actual viewers</text>
+<path d="M 430 318 L 430 350" stroke="var(--line-2)" stroke-width="1.8" fill="none"/>
+<text x="446" y="338" text-anchor="middle" font-size="9" fill="var(--muted)" class="mono">NO</text>
+
+<rect x="230" y="350" width="400" height="56" rx="7" fill="var(--surface-2)" stroke="var(--ink-2)"/>
+<text x="430" y="374" text-anchor="middle" font-size="13" font-weight="650">Start small either way.</text>
+<text x="430" y="393" text-anchor="middle" font-size="11" fill="var(--muted)">scaling an F SKU is a portal action, not a migration</text>
+</svg>
+</div>
+<figcaption><b>This picks a size, not a vendor</b> — section 09 does the vendor. Starting
+small is safe advice in this range specifically: Microsoft notes that scaling across the
+F256 and F512 boundary can produce a slower experience, but nothing in an F8-to-F64 move
+crosses it.</figcaption>
+</figure>
+
+<div class="note warn">
+<span class="lbl">The risk in the cheap option, named</span>
+<p><b>F16's problem is not the nightly batch. It is 200 people opening reports at 09:00
+on a Monday.</b> The batch is comfortable — 32 Spark VCores, 96 with bursting, against
+tens of gigabytes. Report queries are a different animal: they are interactive
+operations, smoothed over only five to sixty-four minutes, and they are the first thing
+section 07's staged throttle delays and then rejects.</p>
+<p>So the honest form of the cheap recommendation is: <b>start at F16, and watch the
+throttling chart in the capacity metrics app for the first two months.</b> If interactive
+delay starts appearing at the morning peak, that is the signal to scale — not the
+invoice.</p>
+</div>
+
+<h3>What I would actually buy</h3>
+
+<ol>
+<li><b>Nothing here is working hard.</b> Tens of gigabytes and a two-hour batch do not
+stress either platform. The performance question everyone opens with is not the
+question.</li>
+<li><b>Databricks compute really is the cheapest line</b> — $166 to $771 against
+$1,304. It is also the smallest line, which is the point.</li>
+<li><b>The biggest number in the whole comparison is a licensing threshold</b>, not
+compute. That makes the platform choice nearly free and the licensing choice
+expensive.</li>
+<li><b>At its most generous, the saving is around $13,000 a year</b> — $1,138 a month, if
+Databricks lands at the bottom of its range. That is the strongest form of the case
+against my recommendation, and it still does not cover a second vendor relationship, a
+second set of skills to hire for, a second support contract, and the seam between them.
+One engineer costs more than the saving.</li>
+</ol>
+
+<div class="verdict"><b>Buy Fabric. Start at F16 with Pro licences for the people who
+genuinely open reports — not F64 on day one.</b> Move to F64 when your viewer count
+passes $3,752 divided by your Pro rate, or when the morning peak starts throttling.
+Revisit Databricks the first time someone asks for real machine learning, not before.</div>
+
+<p>The case against this: a company that expects to do serious data science within two
+years is buying a skills base as well as a platform, and starting on Fabric means
+starting that clock later. If you believe that is your trajectory, weigh section 09
+harder than this section.</p>
+
+<h2 id="growth"><span class="num">07</span>What happens when the data grows</h2>
 
 <h3>Fabric: bursting, smoothing, then a staged throttle</h3>
 
@@ -645,13 +918,13 @@ administrator has to actively configure. <i>Nothing stops an expensive query by
 default.</i></p>
 
 <div class="note violet">
-<span class="lbl">The honest summary of section 06</span>
+<span class="lbl">The honest summary of section 07</span>
 <p>Fabric gives you a hard spending ceiling and a soft service level. Databricks gives
 you a hard service level and a soft spending ceiling. Growth does not break either
 platform — it moves along whichever of those two axes the platform left soft.</p>
 </div>
 
-<h2 id="proscons"><span class="num">07</span>Pros and cons, plainly</h2>
+<h2 id="proscons"><span class="num">08</span>Pros and cons, plainly</h2>
 
 <div class="pc">
 <div class="fab">
@@ -700,7 +973,7 @@ platform — it moves along whichever of those two axes the platform left soft.<
 </div>
 </div>
 
-<h2 id="decide"><span class="num">08</span>Choosing</h2>
+<h2 id="decide"><span class="num">09</span>Choosing</h2>
 
 <p>Four questions, asked in this order. The order is the point: the first one that
 returns a clear yes should settle it, because it is the one with the largest financial
@@ -775,7 +1048,7 @@ a badly-run Databricks estate and the reverse is equally true. Hiring and existi
 skills are a legitimate technical input, not a soft one.</p>
 </div>
 
-<h2 id="both"><span class="num">09</span>The option you did not ask about</h2>
+<h2 id="both"><span class="num">10</span>The option you did not ask about</h2>
 
 <p>The either/or framing is worth attacking, because the strongest structural argument
 in this whole comparison is that you may not have to choose.</p>
@@ -819,7 +1092,7 @@ cost-saving one.</li>
 learning work <i>and</i> a large Power BI audience. <b>Two platforms because nobody would
 decide is the most expensive outcome on this page.</b></div>
 
-<h2 id="wrong"><span class="num">10</span>Where this could be wrong</h2>
+<h2 id="wrong"><span class="num">11</span>Where this could be wrong</h2>
 
 <p>The parts of this comparison most likely to fail under scrutiny, listed so you can
 attack them first.</p>
@@ -840,6 +1113,18 @@ offers on-demand billing for Spark, where jobs run on separate serverless resour
 consume no capacity units from the capacity, and are billed pay-as-you-go. Bursting and
 smoothing do not apply in that mode. That is a meter inside Fabric, and it weakens the
 tidiest argument on this page.</li>
+<li><b>The Databricks-unit count per machine is unsourced.</b> Section 06's Databricks
+column depends on how many units a virtual machine draws, and I could not find that
+published in a form I could verify. The figures in circulation differ by more than a
+factor of two, which is why that column is a range. It is the weakest number on the
+page.</li>
+<li><b>The worked example is a composite.</b> The manufacturer in section 06 is invented
+to be typical — no real organisation's headcount, data volumes or costs appear anywhere
+on this page. If your row counts differ by an order of magnitude, redo the arithmetic
+rather than borrowing the conclusion.</li>
+<li><b>The 200-viewer figure carries the whole recommendation.</b> Section 06 lands just
+below the licensing threshold, which is what makes it close-run. At 500 viewers the
+answer flips to F64 without any of the other arithmetic changing.</li>
 <li><b>I have run no benchmarks.</b> Every performance statement here is drawn from
 documented limits — VCore counts, burst factors, concurrency ceilings — not from
 measurement.</li>
@@ -850,7 +1135,7 @@ half of this comparison is better evidenced than the Databricks half. Weigh
 accordingly.</li>
 </ul>
 
-<h2 id="sources"><span class="num">11</span>Sources</h2>
+<h2 id="sources"><span class="num">12</span>Sources</h2>
 
 <div class="deeper">
 <div class="t">Everything quoted above, in the order it was used</div>
@@ -859,7 +1144,14 @@ accordingly.</li>
 on this page —
 <a href="https://prices.azure.com/api/retail/prices">prices.azure.com/api/retail/prices</a>,
 filtered to <code>Microsoft Fabric</code> and <code>Azure Databricks</code> in
-<code>eastus</code>.</li>
+<code>eastus</code>. Section 06 also uses it for <code>Standard_D4s_v5</code> Linux
+virtual machines ($0.192 an hour) and Azure Data Lake Storage Gen2 hot storage
+($0.020 per GB-month), both in the same region on the same day.</li>
+<li><span class="src">Absent</span> <b>The Power BI Pro per-user price is deliberately
+not quoted.</b> Microsoft's licensing documentation defers to its pricing site, which
+does not serve a figure to an automated fetch. Rather than repeat a number from a
+third-party blog, section 06 gives the break-even rate — $18.76 a viewer a month — so
+you can compare it against your own agreement.</li>
 <li><span class="src">Microsoft</span> Understand Microsoft Fabric licenses and capacity
 — the SKU table, and the F64 free-viewing threshold —
 <a href="https://learn.microsoft.com/en-us/fabric/enterprise/licenses">learn.microsoft.com/fabric/enterprise/licenses</a></li>
@@ -871,7 +1163,7 @@ for Fabric — VCores per capacity unit, the 3× burst factor, queue limits, and
 <code>HTTP 430</code> error —
 <a href="https://learn.microsoft.com/en-us/fabric/data-engineering/spark-job-concurrency-and-queueing">learn.microsoft.com/fabric/data-engineering/spark-job-concurrency-and-queueing</a></li>
 <li><span class="src">Microsoft</span> On-demand billing for Apache Spark in Microsoft
-Fabric — the pay-as-you-go Spark mode cited in section 10 —
+Fabric — the pay-as-you-go Spark mode cited in section 11 —
 <a href="https://learn.microsoft.com/en-us/fabric/data-engineering/autoscale-billing-for-spark-overview">learn.microsoft.com/fabric/data-engineering/autoscale-billing-for-spark-overview</a></li>
 <li><span class="src">Microsoft</span> Microsoft Fabric mirrored catalog from Azure
 Databricks — the no-data-movement quote and the mirroring limitations —
@@ -888,11 +1180,11 @@ Databricks — the reverse-direction mechanics —
 <footer>
 <p><b>What this page is.</b> A comparison written to be argued with, not a
 recommendation to adopt anything. Every vendor claim above is quoted or paraphrased
-from a page linked in section 11. Every calculation is labelled as mine and shown in
+from a page linked in section 12. Every calculation is labelled as mine and shown in
 full so it can be checked line by line. Where a statement is a judgement rather than a
 source, it is written as one.</p>
 <p><b>Verified 2026-09-04, prices from <code>eastus</code> in US dollars.</b> Rates,
-regional pricing, preview status and product names all change. Re-read section 10
+regional pricing, preview status and product names all change. Re-read section 11
 before quoting anything here in a decision document.</p>
 </footer>
 

@@ -16,6 +16,12 @@ large data better" has no answer; what sets the bill is duty cycle. First-party 
 straight from the Azure retail price API, Fabric's four throttling stages, a break-even
 calculation you can check line by line, and a four-question decision tree.
 
+Section 06 costs one month in full for a composite mid-sized global manufacturer starting
+with no platform at all. Two findings worth the click: the modelled dataset for a global
+company with a nine-figure turnover is **tens of gigabytes**, not terabytes; and the
+largest number in the whole comparison is a **licensing threshold, not compute** — which
+makes the platform choice nearly free and the licensing choice expensive.
+
 A comparison of Anthropic's two agentic surfaces — **Claude Code** and **Claude
 Cowork** — on cost, security and governance, plus the two ways an agent reaches
 **Microsoft Fabric** from a developer machine (an MCP server, or the `fab` CLI).

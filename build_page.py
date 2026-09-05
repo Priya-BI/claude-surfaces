@@ -57,7 +57,8 @@ PAGES = [
         Path("fabric-vs-databricks/index.html"),
         "Microsoft Fabric and Databricks compared on the thing that actually sets the "
         "bill: duty cycle, not data volume. First-party prices from the Azure retail "
-        "price API, the throttling stages, a break-even calculation, and a decision tree.",
+        "price API, the throttling stages, and a full one-month costing for a "
+        "mid-sized global manufacturer starting from scratch.",
     ),
 ]
 
